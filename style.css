@@ -556,3 +556,69 @@ body {
     border: 1px solid #334155;
     resize: none;
 }
+
+/* 1. Fastlås højden på overskrifterne så venstre side og dagene starter ens */
+.day-header {
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    font-weight: 800;
+    font-size: 0.88rem;
+    border-bottom: 1px solid var(--border-color);
+    box-sizing: border-box;
+}
+
+.time-axis-header {
+    height: 42px;
+    background: #f1f5f9;
+    border-bottom: 1px solid var(--border-color);
+    box-sizing: border-box;
+}
+
+/* 2. Præcis placering af tidsstreger og tal */
+.time-axis {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-color);
+    background: #f8fafc;
+    user-select: none;
+    position: relative;
+}
+
+.time-tick {
+    position: relative;
+    border-top: 1px solid #e2e8f0;
+    box-sizing: border-box;
+}
+
+.time-tick-last {
+    position: relative;
+    border-top: 1px solid #e2e8f0;
+    height: 0;
+    box-sizing: border-box;
+}
+
+.time-tick-label {
+    position: absolute;
+    top: -7px;
+    right: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    line-height: 1;
+    background: #f8fafc;
+    padding: 0 2px;
+}
+
+/* 3. Fast højde på 15 timer (07:00-22:00 = 840px) og matchende baggrundsstreger */
+.day-body {
+    position: relative;
+    height: 840px;
+    background-color: #ffffff;
+    background-image: 
+        linear-gradient(to bottom, #e2e8f0 1px, transparent 1px),
+        linear-gradient(to bottom, #f8fafc 1px, transparent 1px);
+    background-size: 100% 56px, 100% 28px;
+}

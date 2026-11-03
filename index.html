@@ -116,6 +116,7 @@
     </div>
 
     <!-- Modal: Rediger lektion -->
+    <!-- Modal: Rediger lektion -->
     <dialog id="edit-modal" class="modal">
         <form method="dialog" id="edit-form" class="modal-card">
             <h3>Rediger lektion</h3>
@@ -136,6 +137,18 @@
             <div class="form-group">
                 <label>Bemærkning / Lokale (valgfrit)</label>
                 <input type="text" id="edit-note" placeholder="fx Hal, Globen, Udendørs">
+            </div>
+            <!-- NYT: Mulighed for farve-override -->
+            <div class="form-row" style="margin-top: 5px;">
+                <div class="form-group">
+                    <label>Specifik farve</label>
+                    <input type="color" id="edit-color" style="height: 38px; width: 100%; cursor: pointer; padding: 2px;">
+                </div>
+                <div class="form-group" style="justify-content: flex-end; padding-bottom: 8px;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; color: #475569;">
+                        <input type="checkbox" id="edit-use-override"> Anvend egen farve
+                    </label>
+                </div>
             </div>
             <div class="modal-actions">
                 <button type="button" id="btn-delete-entry" class="btn btn-danger">Slet brik</button>

@@ -1,10 +1,8 @@
 import { VIH_SKEMA_SETTINGS } from './settings.js';
-import { fetchPrototypes } from './prototypes.js';
+import { allPrototypes } from './prototypes.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const SETTINGS = VIH_SKEMA_SETTINGS;
-    SETTINGS.prototypes = []; // Fyldes dynamisk
-
     const STORAGE_KEY_CURRENT = 'vih_active_schedule_data';
     const STORAGE_KEY_CUSTOM_BLOCKS = 'vih_custom_schedule_blocks';
     const STORAGE_KEY_CUSTOM_PROTOS = 'vih_custom_schedule_protos';
@@ -14,13 +12,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentNotes = "";
     let customBlocks = [];
     let customPrototypes = [];
-    let activeProtoId = null; 
+    let activeProtoId = null;
     let currentTitle = "Skemaforslag";
     let isModified = false;
     let editingEntryId = null;
 
     // DOM referencer
-    const paletteEl = document.getElementById('unified-palette');
+    const paletteEl = document.getElementById('unified-palette') || document.getElementById('block-palette');
+    const statsContainer = document.getElementById('stats-container');
     const timeAxisEl = document.getElementById('time-axis');
     const protoSelect = document.getElementById('prototype-select');
     const titleDisplay = document.getElementById('schedule-title-display');
@@ -33,6 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const editStart = document.getElementById('edit-start');
     const editEnd = document.getElementById('edit-end');
     const editNote = document.getElementById('edit-note');
+    const editColor = document.getElementById('edit-color');
+    const editUseOverride = document.getElementById('edit-use-override');
     const btnDeleteEntry = document.getElementById('btn-delete-entry');
 
     const customModal = document.getElementById('custom-block-modal');
@@ -40,44 +41,69 @@ document.addEventListener('DOMContentLoaded', () => {
     const customColor = document.getElementById('custom-color');
     const customDuration = document.getElementById('custom-duration');
 
-    // --- 1. INITIALISERING (Nu asynkron så vi kan hente filer) ---
-    async function init() {
+    // --- 1. INITIALISERING ---
+    function init() {
         loadFromStorage();
         buildTimeAxis();
-        
-        // Hent JSON filer fra prototypes-mappen
-        SETTINGS.prototypes = await fetchPrototypes();
-        
+
+        SETTINGS.prototypes = allPrototypes;
         updateProtoDropdown();
 
-        if (activeProtoId) {
-            loadPrototype(activeProtoId, false);
+        const validProto = SETTINGS.prototypes.find(p => p.id === activeProtoId) ||
+                           customPrototypes.find(p => p.id === activeProtoId);
+
+        if (validProto) {
+            loadPrototype(validProto.id, false);
         } else if (SETTINGS.prototypes.length > 0) {
             loadPrototype(SETTINGS.prototypes[0].id, false);
+        } else {
+            renderSchedule();
         }
 
         renderPaletteAndStats();
         setupDragAndDrop();
     }
 
-    function buildTimeAxis() {
+function buildTimeAxis() {
+        if (!timeAxisEl) return;
         timeAxisEl.innerHTML = '';
+
+        // Spacer der matcher overskrifterne (Mandag, Tirsdag osv.)
+        const headerSpacer = document.createElement('div');
+        headerSpacer.className = 'time-axis-header';
+        timeAxisEl.appendChild(headerSpacer);
+
         const { startHour, endHour, pixelPerHour } = SETTINGS.timeline;
-        for (let hour = startHour; hour <= endHour; hour++) {
+
+        for (let hour = startHour; hour < endHour; hour++) {
             const tick = document.createElement('div');
             tick.className = 'time-tick';
             tick.style.height = `${pixelPerHour}px`;
-            tick.textContent = `${String(hour).padStart(2, '0')}:00`;
+
+            const label = document.createElement('span');
+            label.className = 'time-tick-label';
+            label.textContent = `${String(hour).padStart(2, '0')}:00`;
+            tick.appendChild(label);
+
             timeAxisEl.appendChild(tick);
         }
+
+        // Sidste markør kl. 22:00 i bunden
+        const lastTick = document.createElement('div');
+        lastTick.className = 'time-tick-last';
+        const lastLabel = document.createElement('span');
+        lastLabel.className = 'time-tick-label';
+        lastLabel.textContent = `${String(endHour).padStart(2, '0')}:00`;
+        lastTick.appendChild(lastLabel);
+        timeAxisEl.appendChild(lastTick);
     }
 
-    // --- 2. STATUS-STYRING (Aktiv skabelon vs Kladde/Ændret) ---
     function setModifiedState(modified) {
         isModified = modified;
+        if (!statusBadge || !statusBadgeText) return;
 
         if (isModified) {
-            protoSelect.value = ""; 
+            if (protoSelect) protoSelect.value = "";
             statusBadge.className = 'status-badge status-modified';
             statusBadgeText.textContent = '✏️ Kladde (ugemt ændring)';
         } else {
@@ -86,8 +112,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- 3. SAMMENGROET PALETTE & TIMETÆLLER ---
+    // --- 2. FARVELOGIK (Dynamisk opslag) ---
+    function getBlockColors(entry) {
+        // Hvis brugeren specifikt har bedt om at overskrive farven på denne brik
+        if (entry.colorOverride && entry.overrideColor) {
+            return { color: entry.overrideColor, textColor: entry.overrideTextColor || '#ffffff' };
+        }
+
+        // Ellers slå op i paletten baseret på navnet (title)
+        const allBlocks = [...SETTINGS.defaultBlocks, ...customBlocks, ...SETTINGS.mealBlocks];
+        const paletteMatch = allBlocks.find(b => b.title === entry.title);
+        
+        if (paletteMatch) {
+            return { color: paletteMatch.color, textColor: paletteMatch.textColor || '#ffffff' };
+        }
+
+        // Fallback hvis den slet ikke findes (hvis man fx har omdøbt brikken til noget ukendt)
+        return { color: entry.color || '#cbd5e1', textColor: entry.textColor || '#0f172a' };
+    }
+
+    // --- 3. PALETTE & TIMETÆLLER ---
     function renderPaletteAndStats() {
+        if (!paletteEl) return;
         paletteEl.innerHTML = '';
 
         const counts = {};
@@ -114,13 +160,13 @@ document.addEventListener('DOMContentLoaded', () => {
             card.draggable = true;
 
             card.innerHTML = `
-                <div class="palette-card-left">
-                    <span class="palette-color-dot" style="background-color: ${b.color};"></span>
-                    <span class="palette-name">${b.title}</span>
+                <div class="palette-card-left" style="display: flex; align-items: center; gap: 8px;">
+                    <span class="palette-color-dot" style="width: 12px; height: 12px; border-radius: 50%; background-color: ${b.color}; display: inline-block;"></span>
+                    <span class="palette-name" style="font-weight: 700; font-size: 0.85rem;">${b.title}</span>
                 </div>
-                <div class="palette-card-right">
-                    <span class="badge-count">${stat.count}x</span>
-                    <span class="badge-time">${timeStr}</span>
+                <div class="palette-card-right" style="display: flex; align-items: baseline; gap: 4px;">
+                    <span class="badge-count" style="font-weight: 800; font-size: 0.8rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">${stat.count}x</span>
+                    <span class="badge-time" style="font-size: 0.72rem; color: #64748b;">${timeStr}</span>
                 </div>
             `;
 
@@ -135,9 +181,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
             paletteEl.appendChild(card);
         });
+
+        if (statsContainer) {
+            statsContainer.innerHTML = '';
+            const sorted = Object.entries(counts).sort((a, b) => b[1].totalMin - a[1].totalMin);
+            sorted.forEach(([title, data]) => {
+                const row = document.createElement('div');
+                row.className = 'stat-row';
+                const h = Math.floor(data.totalMin / 60);
+                const m = data.totalMin % 60;
+                
+                // Find farven dynamisk til border
+                const mockEntry = { title: title };
+                const { color } = getBlockColors(mockEntry);
+                row.style.borderLeftColor = color;
+
+                row.innerHTML = `<span>${title}</span><strong>${data.count}x (${h}t ${m > 0 ? m + 'm' : ''})</strong>`;
+                statsContainer.appendChild(row);
+            });
+        }
     }
 
-    // --- 4. DROP AF NYE BRIKKER FRA VENSTRE ---
+    // --- 4. DRAG & DROP ---
     function setupDragAndDrop() {
         const dayBodies = document.querySelectorAll('.day-body');
         dayBodies.forEach(col => {
@@ -163,7 +228,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const minutesFromTop = (offsetY / SETTINGS.timeline.pixelPerHour) * 60;
                 const rawTotalMinutes = SETTINGS.timeline.startHour * 60 + minutesFromTop;
 
-                // 5-minutters snapping
                 const roundedMinutes = Math.round(rawTotalMinutes / 5) * 5;
                 const startStr = minutesToTime(roundedMinutes);
                 const endStr = minutesToTime(roundedMinutes + blockData.defaultDuration);
@@ -174,9 +238,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     title: blockData.title,
                     start: startStr,
                     end: endStr,
-                    color: blockData.color,
-                    textColor: blockData.textColor,
-                    note: ''
+                    color: blockData.color,         // Original backup
+                    textColor: blockData.textColor, // Original backup
+                    note: '',
+                    colorOverride: false,
+                    overrideColor: ''
                 };
 
                 currentSchedule.push(newEntry);
@@ -187,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 5. RENDER SKEMAET ---
+    // --- 5. RENDER SKEMA PÅ TIDSLINJEN ---
     function renderSchedule() {
         ['man', 'tir', 'ons', 'tor', 'fre'].forEach(d => {
             const body = document.getElementById(`day-${d}`);
@@ -208,13 +274,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const topPx = ((startMin - timelineStartMinutes) / 60) * pixelPerHour;
             const heightPx = (duration / 60) * pixelPerHour;
 
+            // HENT FARVEN DYNAMISK!
+            const { color, textColor } = getBlockColors(entry);
+
             const blockEl = document.createElement('div');
             blockEl.className = 'schedule-block';
             blockEl.dataset.entryId = entry.id;
             blockEl.style.top = `${topPx}px`;
             blockEl.style.height = `${heightPx}px`;
-            blockEl.style.backgroundColor = entry.color;
-            blockEl.style.color = entry.textColor || '#ffffff';
+            blockEl.style.backgroundColor = color;
+            blockEl.style.color = textColor;
 
             blockEl.innerHTML = `
                 <div class="block-header-line">
@@ -241,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPaletteAndStats();
     }
 
-    // --- 6. FLYT OG JUSTER LÆNGDE ---
+    // --- 6. FLYT & ÆNDR LÆNGDE ---
     function attachDragAndResize(blockEl, entry) {
         const resizeHandle = blockEl.querySelector('.block-resize-handle');
         const timeDisplay = blockEl.querySelector('.block-time');
@@ -249,7 +318,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const timelineStartMin = startHour * 60;
         const timelineEndMin = endHour * 60;
 
-        // Træk i bunden (Juster varighed)
         resizeHandle.addEventListener('pointerdown', (e) => {
             e.stopPropagation();
             blockEl.classList.add('is-resizing');
@@ -290,7 +358,6 @@ document.addEventListener('DOMContentLoaded', () => {
             window.addEventListener('pointerup', onPointerUp);
         });
 
-        // Træk op/ned (Flyt tidspunkt)
         blockEl.addEventListener('pointerdown', (e) => {
             if (e.target.closest('.block-close-btn') || e.target.closest('.block-resize-handle')) return;
 
@@ -346,93 +413,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 7. REDIGER LEKTION MODAL ---
     function openEditModal(entry) {
+        if (!editModal) return;
         editingEntryId = entry.id;
         editTitle.value = entry.title;
         editStart.value = entry.start;
         editEnd.value = entry.end;
         editNote.value = entry.note || '';
+        
+        // Farve-override inputs
+        const currentEffectiveColors = getBlockColors(entry);
+        editColor.value = entry.colorOverride && entry.overrideColor ? entry.overrideColor : currentEffectiveColors.color;
+        editUseOverride.checked = !!entry.colorOverride;
+
         editModal.showModal();
     }
 
-    document.getElementById('edit-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const entry = currentSchedule.find(item => item.id === editingEntryId);
-        if (entry) {
-            entry.title = editTitle.value.trim();
-            entry.start = editStart.value;
-            entry.end = editEnd.value;
-            entry.note = editNote.value.trim();
+    const editForm = document.getElementById('edit-form');
+    if (editForm) {
+        editForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const entry = currentSchedule.find(item => item.id === editingEntryId);
+            if (entry) {
+                entry.title = editTitle.value.trim();
+                entry.start = editStart.value;
+                entry.end = editEnd.value;
+                entry.note = editNote.value.trim();
+                
+                // Gem evt. farveoverride
+                entry.colorOverride = editUseOverride.checked;
+                if (entry.colorOverride) {
+                    entry.overrideColor = editColor.value;
+                    entry.overrideTextColor = '#ffffff'; // Simpel standard for override text
+                } else {
+                    entry.overrideColor = '';
+                }
+
+                setModifiedState(true);
+                saveState();
+                renderSchedule();
+            }
+            editModal.close();
+        });
+    }
+
+    if (btnDeleteEntry) {
+        btnDeleteEntry.addEventListener('click', () => {
+            currentSchedule = currentSchedule.filter(item => item.id !== editingEntryId);
             setModifiedState(true);
             saveState();
             renderSchedule();
-        }
-        editModal.close();
-    });
-
-    btnDeleteEntry.addEventListener('click', () => {
-        currentSchedule = currentSchedule.filter(item => item.id !== editingEntryId);
-        setModifiedState(true);
-        saveState();
-        renderSchedule();
-        editModal.close();
-    });
-
-    // --- 8. OMDØB DIREKTE I OVERSKRIFTEN ---
-    document.querySelector('.editable-title-wrapper').addEventListener('click', () => {
-        const newName = prompt('Omdøb dette skemaforslag:', currentTitle);
-        if (!newName || !newName.trim()) return;
-
-        currentTitle = newName.trim();
-        titleDisplay.textContent = currentTitle;
-
-        if (activeProtoId && activeProtoId.startsWith('custom_proto_')) {
-            const p = customPrototypes.find(item => item.id === activeProtoId);
-            if (p) p.name = currentTitle;
-            localStorage.setItem(STORAGE_KEY_CUSTOM_PROTOS, JSON.stringify(customPrototypes));
-            updateProtoDropdown();
-        }
-
-        saveState();
-    });
-
-    // --- 9. INDSÆT FASTE MÅLTIDER ---
-    document.getElementById('btn-insert-meals').addEventListener('click', () => {
-        const days = ['man', 'tir', 'ons', 'tor', 'fre'];
-        days.forEach(day => {
-            SETTINGS.mealBlocks.forEach(meal => {
-                const exists = currentSchedule.some(item => item.day === day && item.title === meal.title);
-                if (!exists) {
-                    currentSchedule.push({
-                        id: 'meal_' + day + '_' + meal.title + '_' + Date.now(),
-                        day: day,
-                        title: meal.title,
-                        start: meal.start,
-                        end: meal.end,
-                        color: meal.color,
-                        textColor: meal.textColor,
-                        note: ''
-                    });
-                }
-            });
+            editModal.close();
         });
-        setModifiedState(true);
-        saveState();
-        renderSchedule();
-    });
+    }
 
-    // --- 10. PROTOTYPER & FORSLAG ---
+    // --- 8. PROTOTYPE DROPDOWN ---
     function updateProtoDropdown() {
+        if (!protoSelect) return;
         protoSelect.innerHTML = '<option value="">-- Vælg foruddefineret skema --</option>';
 
-        const builtGroup = document.createElement('optgroup');
-        builtGroup.label = 'Faste prototyper (fra prototypes-mappen)';
-        SETTINGS.prototypes.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = p.name;
-            builtGroup.appendChild(opt);
-        });
-        protoSelect.appendChild(builtGroup);
+        if (SETTINGS.prototypes && SETTINGS.prototypes.length > 0) {
+            const builtGroup = document.createElement('optgroup');
+            builtGroup.label = 'Faste prototyper (fra /prototypes)';
+            SETTINGS.prototypes.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                builtGroup.appendChild(opt);
+            });
+            protoSelect.appendChild(builtGroup);
+        }
 
         if (customPrototypes.length > 0) {
             const userGroup = document.createElement('optgroup');
@@ -452,21 +501,23 @@ document.addEventListener('DOMContentLoaded', () => {
             protoSelect.value = "";
         }
 
-        document.getElementById('btn-delete-proto').style.display = 
-            (activeProtoId && activeProtoId.startsWith('custom_proto_') && !isModified) ? 'inline-block' : 'none';
+        const btnDeleteProto = document.getElementById('btn-delete-proto');
+        if (btnDeleteProto) {
+            btnDeleteProto.style.display = (activeProtoId && activeProtoId.startsWith('custom_proto_') && !isModified) ? 'inline-block' : 'none';
+        }
     }
 
     function loadPrototype(id, markModified = false) {
-        let proto = SETTINGS.prototypes.find(p => p.id === id);
-        if (!proto) proto = customPrototypes.find(p => p.id === id);
+        let proto = SETTINGS.prototypes.find(p => p.id === id) ||
+                    customPrototypes.find(p => p.id === id);
 
         if (proto) {
             activeProtoId = proto.id;
             currentTitle = proto.name;
             currentSchedule = JSON.parse(JSON.stringify(proto.schedule));
             currentNotes = proto.notes || "";
-            notesTextarea.value = currentNotes;
-            titleDisplay.textContent = currentTitle;
+            if (notesTextarea) notesTextarea.value = currentNotes;
+            if (titleDisplay) titleDisplay.textContent = currentTitle;
 
             setModifiedState(markModified);
             updateProtoDropdown();
@@ -475,146 +526,180 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    protoSelect.addEventListener('change', (e) => {
-        if (e.target.value) {
-            loadPrototype(e.target.value, false);
-        }
-    });
+    if (protoSelect) {
+        protoSelect.addEventListener('change', (e) => {
+            if (e.target.value) {
+                loadPrototype(e.target.value, false);
+            }
+        });
+    }
 
-    document.getElementById('btn-save-proto').addEventListener('click', () => {
-        const name = prompt('Hvad skal dit skemaforslag hedde?', currentTitle !== 'Skemaforslag' ? currentTitle : 'Mit nye forslag');
-        if (!name || !name.trim()) return;
+    const btnSaveProto = document.getElementById('btn-save-proto');
+    if (btnSaveProto) {
+        btnSaveProto.addEventListener('click', () => {
+            const name = prompt('Hvad skal dit skemaforslag hedde?', currentTitle !== 'Skemaforslag' ? currentTitle : 'Mit nye forslag');
+            if (!name || !name.trim()) return;
 
-        const newProto = {
-            id: 'custom_proto_' + Date.now(),
-            name: name.trim(),
-            notes: notesTextarea.value,
-            schedule: JSON.parse(JSON.stringify(currentSchedule))
-        };
+            const newProto = {
+                id: 'custom_proto_' + Date.now(),
+                name: name.trim(),
+                notes: notesTextarea ? notesTextarea.value : '',
+                schedule: JSON.parse(JSON.stringify(currentSchedule))
+            };
 
-        customPrototypes.push(newProto);
-        localStorage.setItem(STORAGE_KEY_CUSTOM_PROTOS, JSON.stringify(customPrototypes));
-        activeProtoId = newProto.id;
-        currentTitle = newProto.name;
-        titleDisplay.textContent = currentTitle;
-
-        setModifiedState(false);
-        updateProtoDropdown();
-        saveState();
-    });
-
-    document.getElementById('btn-delete-proto').addEventListener('click', () => {
-        if (!activeProtoId || !activeProtoId.startsWith('custom_proto_')) return;
-        if (confirm(`Vil du slette forslaget "${currentTitle}"?`)) {
-            customPrototypes = customPrototypes.filter(p => p.id !== activeProtoId);
+            customPrototypes.push(newProto);
             localStorage.setItem(STORAGE_KEY_CUSTOM_PROTOS, JSON.stringify(customPrototypes));
-            loadPrototype(SETTINGS.prototypes[0].id, false);
-        }
-    });
+            activeProtoId = newProto.id;
+            currentTitle = newProto.name;
+            if (titleDisplay) titleDisplay.textContent = currentTitle;
 
-    document.getElementById('btn-clear-schedule').addEventListener('click', () => {
-        if (confirm('Vil du rydde alle lektioner i skemaet?')) {
-            currentSchedule = [];
+            setModifiedState(false);
+            updateProtoDropdown();
+            saveState();
+        });
+    }
+
+    const btnInsertMeals = document.getElementById('btn-insert-meals');
+    if (btnInsertMeals) {
+        btnInsertMeals.addEventListener('click', () => {
+            const days = ['man', 'tir', 'ons', 'tor', 'fre'];
+            days.forEach(day => {
+                SETTINGS.mealBlocks.forEach(meal => {
+                    const exists = currentSchedule.some(item => item.day === day && item.title === meal.title);
+                    if (!exists) {
+                        currentSchedule.push({
+                            id: 'meal_' + day + '_' + meal.title + '_' + Date.now(),
+                            day: day,
+                            title: meal.title,
+                            start: meal.start,
+                            end: meal.end,
+                            color: meal.color,
+                            textColor: meal.textColor,
+                            note: ''
+                        });
+                    }
+                });
+            });
             setModifiedState(true);
             saveState();
             renderSchedule();
-        }
-    });
+        });
+    }
 
-    notesTextarea.addEventListener('input', () => {
-        currentNotes = notesTextarea.value;
+    const btnClearSchedule = document.getElementById('btn-clear-schedule');
+    if (btnClearSchedule) {
+        btnClearSchedule.addEventListener('click', () => {
+            if (confirm('Vil du rydde alle lektioner i skemaet?')) {
+                currentSchedule = [];
+                setModifiedState(true);
+                saveState();
+                renderSchedule();
+            }
+        });
+    }
+
+    if (notesTextarea) {
+        notesTextarea.addEventListener('input', () => {
+            currentNotes = notesTextarea.value;
+            setModifiedState(true);
+            saveState();
+        });
+    }
+
+    document.querySelector('.editable-title-wrapper')?.addEventListener('click', () => {
+        const newName = prompt('Omdøb dette skemaforslag:', currentTitle);
+        if (!newName || !newName.trim()) return;
+
+        currentTitle = newName.trim();
+        if (titleDisplay) titleDisplay.textContent = currentTitle;
+
+        if (activeProtoId && activeProtoId.startsWith('custom_proto_')) {
+            const p = customPrototypes.find(item => item.id === activeProtoId);
+            if (p) p.name = currentTitle;
+            localStorage.setItem(STORAGE_KEY_CUSTOM_PROTOS, JSON.stringify(customPrototypes));
+            updateProtoDropdown();
+        }
+
         setModifiedState(true);
         saveState();
     });
 
-    // --- 11. OPRET BRUGERDEFINERET BRIK ---
-    document.getElementById('btn-new-block').addEventListener('click', () => {
-        customModal.showModal();
-    });
+    const btnNewBlock = document.getElementById('btn-new-block');
+    if (btnNewBlock && customModal) {
+        btnNewBlock.addEventListener('click', () => customModal.showModal());
+        const btnCancelCustomBlock = document.getElementById('btn-cancel-custom-block');
+        if (btnCancelCustomBlock) btnCancelCustomBlock.addEventListener('click', () => customModal.close());
 
-    document.getElementById('btn-cancel-custom-block').addEventListener('click', () => {
-        customModal.close();
-    });
+        const customBlockForm = document.getElementById('custom-block-form');
+        if (customBlockForm) {
+            customBlockForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const title = customTitle.value.trim();
+                const color = customColor.value;
+                const dur = parseInt(customDuration.value, 10);
+                if (!title) return;
 
-    document.getElementById('custom-block-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const title = customTitle.value.trim();
-        const color = customColor.value;
-        const dur = parseInt(customDuration.value, 10);
+                customBlocks.push({
+                    id: 'cb_' + Date.now(),
+                    title: title,
+                    color: color,
+                    textColor: '#ffffff',
+                    defaultDuration: dur
+                });
 
-        if (!title) return;
-
-        customBlocks.push({
-            id: 'cb_' + Date.now(),
-            title: title,
-            color: color,
-            textColor: '#ffffff',
-            defaultDuration: dur
-        });
-
-        localStorage.setItem(STORAGE_KEY_CUSTOM_BLOCKS, JSON.stringify(customBlocks));
-        renderPaletteAndStats();
-        customTitle.value = '';
-        customModal.close();
-    });
-
-    // --- 12. DOWNLOAD SOM JSON-FIL ---
-    document.getElementById('btn-export-json').addEventListener('click', () => {
-        const prototypeObject = {
-            id: 'proto_' + Date.now(),
-            name: currentTitle,
-            notes: notesTextarea.value,
-            schedule: currentSchedule
-        };
-
-        // Gør det til en JSON-streng og formatér pænt
-        const jsonStr = JSON.stringify(prototypeObject, null, 4);
-        
-        // Opret et usynligt download-link
-        const blob = new Blob([jsonStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        
-        // Lav et pænt, web-venligt filnavn
-        const safeName = currentTitle.replace(/[^a-z0-9æøå]/gi, '_').toLowerCase();
-        
-        a.href = url;
-        a.download = `${safeName}.json`;
-        document.body.appendChild(a);
-        a.click();
-        
-        // Oprydning
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    });
-
-    // --- 13. BILLEDEKSPORT (PNG) ---
-    document.getElementById('btn-export-image').addEventListener('click', () => {
-        const target = document.getElementById('export-target');
-
-        if (typeof window.html2canvas !== 'function') {
-            alert('html2canvas er ikke indlæst.');
-            return;
+                localStorage.setItem(STORAGE_KEY_CUSTOM_BLOCKS, JSON.stringify(customBlocks));
+                renderPaletteAndStats();
+                customTitle.value = '';
+                customModal.close();
+            });
         }
+    }
 
-        window.html2canvas(target, {
-            scale: 2,
-            backgroundColor: '#ffffff'
-        }).then(canvas => {
-            const link = document.createElement('a');
-            link.download = `${currentTitle.replace(/\s+/g, '_')}_VIH.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        }).catch(err => {
-            console.error('Billedeksport fejlede:', err);
+    const btnExportJson = document.getElementById('btn-export-json');
+    if (btnExportJson) {
+        btnExportJson.addEventListener('click', () => {
+            const prototypeObject = {
+                id: 'proto_' + Date.now(),
+                name: currentTitle,
+                notes: notesTextarea ? notesTextarea.value : "",
+                schedule: currentSchedule
+            };
+
+            const jsonStr = JSON.stringify(prototypeObject, null, 4);
+            const blob = new Blob([jsonStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            
+            const safeName = currentTitle.replace(/[^a-z0-9æøå]/gi, '_').toLowerCase();
+            a.href = url;
+            a.download = `${safeName}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         });
-    });
+    }
 
-    // --- LOCALSTORAGE HJÆLPERE ---
+    const btnExportImage = document.getElementById('btn-export-image');
+    if (btnExportImage) {
+        btnExportImage.addEventListener('click', () => {
+            const target = document.getElementById('export-target');
+            if (!target || typeof window.html2canvas !== 'function') return;
+
+            window.html2canvas(target, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `${currentTitle.replace(/\s+/g, '_')}_VIH.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        });
+    }
+
+    // --- 9. LOCALSTORAGE HJÆLPERE ---
     function saveState() {
         localStorage.setItem(STORAGE_KEY_CURRENT, JSON.stringify({
             schedule: currentSchedule,
-            notes: notesTextarea.value,
+            notes: notesTextarea ? notesTextarea.value : '',
             activeProtoId: activeProtoId,
             currentTitle: currentTitle,
             isModified: isModified
@@ -652,5 +737,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     }
 
+    // Start
     init();
 });

@@ -1,0 +1,53 @@
+{
+  "id": "proto_e2021",
+  "name": "2021E",
+  "notes": "Grundskema for hele E2021.",
+  "schedule": [
+    { "id": "e1_m1", "day": "man", "title": "Morgenmad", "start": "07:30", "end": "08:00" },
+    { "id": "e1_m2", "day": "man", "title": "Teammøde", "start": "08:00", "end": "08:45" },
+    { "id": "e1_m3", "day": "man", "title": "Fællessang", "start": "09:00", "end": "09:45" },
+    { "id": "e1_m7", "day": "man", "title": "Idræt 1", "start": "10:05", "end": "11:50" },
+    { "id": "e1_m5", "day": "man", "title": "Frokost", "start": "12:00", "end": "12:30" },
+    { "id": "e1_m6", "day": "man", "title": "Rengøring", "start": "12:30", "end": "13:00" },
+    { "id": "e1_m3", "day": "man", "title": "Kompetencefag", "start": "14:00", "end": "15:30" },
+    { "id": "e1_m9", "day": "man", "title": "Aftensmad", "start": "17:30", "end": "18:15" },
+
+    { "id": "e1_t1", "day": "tir", "title": "Morgenmad", "start": "07:30", "end": "08:00" },
+    { "id": "e1_t2", "day": "tir", "title": "Morgensamling", "start": "08:00", "end": "08:30" },
+    { "id": "e1_t3", "day": "tir", "title": "DGL", "start": "08:45", "end": "10:00" },
+    { "id": "e1_t8", "day": "tir", "title": "Idræt 2", "start": "10:20", "end": "11:50" },
+    { "id": "e1_t5", "day": "tir", "title": "Frokost", "start": "12:00", "end": "12:30" },
+    { "id": "e1_t5", "day": "tir", "title": "Rengøring", "start": "12:30", "end": "13:00" },
+    { "id": "e1_t4", "day": "tir", "title": "Fællesfag", "start": "13:00", "end": "14:30" },
+    { "id": "e1_t4", "day": "tir", "title": "Lærermøde / Elevmøde", "start": "14:45", "end": "16:15" },
+    { "id": "e1_t9", "day": "tir", "title": "Aftensmad", "start": "17:30", "end": "18:15" },
+    { "id": "e1_t10", "day": "tir", "title": "Foredrag", "start": "19:00", "end": "20:30", "note": "Globen" },
+
+    { "id": "e1_o1", "day": "ons", "title": "Morgenmad", "start": "07:30", "end": "08:00" },
+    { "id": "e1_o2", "day": "ons", "title": "Morgensamling", "start": "08:00", "end": "08:30" },
+    { "id": "e1_t3", "day": "ons", "title": "Kompetencefag", "start": "08:45", "end": "10:15" },
+    { "id": "e1_o7", "day": "ons", "title": "Idræt 1", "start": "10:35", "end": "11:50" },
+    { "id": "e1_o5", "day": "ons", "title": "Frokost", "start": "12:00", "end": "12:30" },
+    { "id": "e1_o6", "day": "ons", "title": "Rengøring", "start": "12:30", "end": "13:00" },
+    { "id": "e1_o7", "day": "ons", "title": "Idræt 2", "start": "14:00", "end": "15:30" },
+    { "id": "e1_o8", "day": "ons", "title": "Aftensmad", "start": "17:30", "end": "18:15" },
+
+    { "id": "e1_to1", "day": "tor", "title": "Morgenmad", "start": "07:30", "end": "08:00" },
+    { "id": "e1_to2", "day": "tor", "title": "Morgensamling", "start": "08:00", "end": "08:30" },
+    { "id": "e1_to3", "day": "tor", "title": "DGL", "start": "08:45", "end": "10:00" },
+    { "id": "e1_to3", "day": "tor", "title": "Kompetencefag", "start": "10:20", "end": "11:50" },
+    { "id": "e1_to5", "day": "tor", "title": "Frokost", "start": "12:00", "end": "12:30" },
+    { "id": "e1_to6", "day": "tor", "title": "Rengøring", "start": "12:30", "end": "13:00" },
+    { "id": "e1_to7", "day": "tor", "title": "Idræt 1", "start": "14:00", "end": "15:30" },
+    { "id": "e1_to8", "day": "tor", "title": "Aftensmad", "start": "17:30", "end": "18:15" },
+    { "id": "e1_to9", "day": "tor", "title": "Hyggeaften", "start": "19:00", "end": "20:30" },
+
+    { "id": "e1_f1", "day": "fre", "title": "Morgenmad", "start": "07:30", "end": "08:00" },
+    { "id": "e1_f2", "day": "fre", "title": "Idræt 1", "start": "08:00", "end": "09:30" },
+    { "id": "e1_f4", "day": "fre", "title": "Inspirationsfag", "start": "10:00", "end": "11:50" },
+    { "id": "e1_f4", "day": "fre", "title": "Frokost", "start": "12:00", "end": "12:30" },
+    { "id": "e1_f5", "day": "fre", "title": "Rengøring", "start": "12:30", "end": "13:00" },
+    { "id": "e1_f6", "day": "fre", "title": "Idræt 2", "start": "14:00", "end": "15:30" },
+    { "id": "e1_f8", "day": "fre", "title": "Aftensmad", "start": "17:30", "end": "18:15" }
+  ]
+}

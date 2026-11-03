@@ -1,0 +1,46 @@
+{
+  "id": "proto_forslag_5",
+  "name": "Forslag #6",
+  "notes": "Rengøring 08:00-08:30 hver dag, Inspirationsfag kl. 09:15-10:45 mandag og 2-timers eftermiddagsidræt 14:00-16:00.",
+  "schedule": [
+    { "id": "f5_m0", "day": "man", "title": "Morgenmad", "start": "07:30", "end": "07:55" },
+    { "id": "f5_m1", "day": "man", "title": "Rengøring", "start": "08:00", "end": "08:30" },
+    { "id": "f5_m2", "day": "man", "title": "Fælles / Møde", "start": "08:45", "end": "09:15", "note": "Fælles" },
+    { "id": "f5_m3", "day": "man", "title": "Inspirationsfag", "start": "09:15", "end": "10:45" },
+    { "id": "f5_m4", "day": "man", "title": "Fælles / Møde", "start": "11:00", "end": "11:50", "note": "Team" },
+    { "id": "f5_m5", "day": "man", "title": "Frokost", "start": "12:00", "end": "12:30" },
+    { "id": "f5_m6", "day": "man", "title": "Idræt 1", "start": "14:00", "end": "16:00" },
+
+    { "id": "f5_t0", "day": "tir", "title": "Morgenmad", "start": "07:30", "end": "07:55" },
+    { "id": "f5_t1", "day": "tir", "title": "Rengøring", "start": "08:00", "end": "08:30" },
+    { "id": "f5_t2", "day": "tir", "title": "Morgensamling", "start": "08:45", "end": "09:15" },
+    { "id": "f5_t3", "day": "tir", "title": "DGL", "start": "09:15", "end": "10:45" },
+    { "id": "f5_t4", "day": "tir", "title": "Fælles / Møde", "start": "11:00", "end": "11:50", "note": "Lærermøde" },
+    { "id": "f5_t5", "day": "tir", "title": "Frokost", "start": "12:00", "end": "12:30" },
+    { "id": "f5_t6", "day": "tir", "title": "Idræt 2", "start": "14:00", "end": "16:00" },
+
+    { "id": "f5_o0", "day": "ons", "title": "Morgenmad", "start": "07:30", "end": "07:55" },
+    { "id": "f5_o1", "day": "ons", "title": "Rengøring", "start": "08:00", "end": "08:30" },
+    { "id": "f5_o2", "day": "ons", "title": "Connected", "start": "08:45", "end": "09:15" },
+    { "id": "f5_o3", "day": "ons", "title": "Kompetencefag", "start": "09:15", "end": "10:45", "note": "Kompetence" },
+    { "id": "f5_o4", "day": "ons", "title": "Kompetencefag", "start": "11:00", "end": "11:50", "note": "Kompetence" },
+    { "id": "f5_o5", "day": "ons", "title": "Frokost", "start": "12:00", "end": "12:30" },
+    { "id": "f5_o6", "day": "ons", "title": "Idræt 1", "start": "14:00", "end": "16:00" },
+
+    { "id": "f5_to0", "day": "tor", "title": "Morgenmad", "start": "07:30", "end": "07:55" },
+    { "id": "f5_to1", "day": "tor", "title": "Rengøring", "start": "08:00", "end": "08:30" },
+    { "id": "f5_to2", "day": "tor", "title": "Morgensamling", "start": "08:45", "end": "09:15" },
+    { "id": "f5_to3", "day": "tor", "title": "DGL", "start": "09:15", "end": "10:45" },
+    { "id": "f5_to4", "day": "tor", "title": "BUFFER", "start": "11:00", "end": "11:50", "note": "BUFFER X" },
+    { "id": "f5_to5", "day": "tor", "title": "Frokost", "start": "12:00", "end": "12:30" },
+    { "id": "f5_to6", "day": "tor", "title": "Idræt 2", "start": "14:00", "end": "16:00" },
+
+    { "id": "f5_f0", "day": "fre", "title": "Morgenmad", "start": "07:30", "end": "07:55" },
+    { "id": "f5_f1", "day": "fre", "title": "Rengøring", "start": "08:00", "end": "08:30" },
+    { "id": "f5_f2", "day": "fre", "title": "Morgensamling", "start": "08:45", "end": "09:15" },
+    { "id": "f5_f3", "day": "fre", "title": "Idræt 1", "start": "09:15", "end": "10:45" },
+    { "id": "f5_f4", "day": "fre", "title": "Kompetencefag", "start": "11:00", "end": "11:50", "note": "Kompetence" },
+    { "id": "f5_f5", "day": "fre", "title": "Frokost", "start": "12:00", "end": "12:30" },
+    { "id": "f5_f6", "day": "fre", "title": "Fælles / Møde", "start": "14:00", "end": "16:00", "note": "Fælles" }
+  ]
+}
