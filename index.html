@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIH Skemalægger · Fagudvikling</title>
+    <link rel="stylesheet" href="./style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="planner-layout">
+        <!-- VENSTRE SIDEBAR: PALET & TIMETÆLLER -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <span class="vih-badge">VIH</span>
+                <div>
+                    <h2>Skemalægger</h2>
+                    <p class="sidebar-sub">Træk fag & se timetæller</p>
+                </div>
+            </div>
+
+            <div class="sidebar-top-actions">
+                <button id="btn-new-block" class="btn btn-full btn-outline">+ Opret ny brik</button>
+            </div>
+
+            <!-- Palet med integreret timetæller -->
+            <div class="sidebar-section">
+                <div class="section-header-flex">
+                    <label class="section-label">🧩 Fagbrikker & Timetal</label>
+                    <span class="badge-hint">Træk over</span>
+                </div>
+                <div id="unified-palette" class="unified-palette-list">
+                    <!-- Brikker genereres dynamisk via script.js -->
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button id="btn-clear-schedule" class="btn btn-full btn-subtle">🗑️ Ryd hele skemaet</button>
+            </div>
+        </aside>
+
+        <!-- HOVEDOMRÅDE -->
+        <main class="main-content">
+            <!-- ØVERSTE VÆRKTØJSLINJE -->
+            <div class="top-control-bar">
+                <div class="toolbar-group">
+                    <label class="toolbar-label" for="prototype-select">Skabelon:</label>
+                    <select id="prototype-select" class="select-input">
+                        <option value="">-- Vælg foruddefineret skema --</option>
+                    </select>
+                    <button id="btn-save-proto" class="btn btn-outline" title="Gem nuværende skema som nyt forslag">💾 Gem forslag</button>
+                    <button id="btn-delete-proto" class="btn btn-danger" style="display: none;" title="Slet dette gemte forslag">Slet</button>
+                </div>
+
+                <div class="toolbar-group">
+                    <button id="btn-insert-meals" class="btn btn-outline">🥪 Indsæt måltider</button>
+                    <button id="btn-export-json" class="btn btn-outline" title="Download som JSON-fil">📥 Download JSON</button>
+                    <button id="btn-export-image" class="btn btn-primary">📸 Gem billede</button>
+                </div>
+            </div>
+
+            <!-- SKEMAFELT MED OMDØB-BAR OVERSKRIFT -->
+            <div id="export-target" class="export-container">
+                <div class="schedule-title-row">
+                    <div class="title-with-status">
+                        <div class="editable-title-wrapper" title="Klik for at omdøbe">
+                            <h1 id="schedule-title-display">Skemaforslag</h1>
+                            <span class="edit-icon">✏️</span>
+                        </div>
+                        <div id="status-badge" class="status-badge status-saved">
+                            <span class="status-dot">●</span>
+                            <span id="status-badge-text">Skabelon aktiv</span>
+                        </div>
+                    </div>
+                    <p class="subtitle">Mandag til fredag · Kl. 07:00 – 21:30 · 5 min snapping</p>
+                </div>
+
+                <!-- Tidslinje Gitter -->
+                <div class="timeline-wrapper">
+                    <div class="time-axis" id="time-axis"></div>
+
+                    <div class="days-grid" id="days-grid">
+                        <div class="day-column" data-day="man">
+                            <div class="day-header">Mandag</div>
+                            <div class="day-body" id="day-man"></div>
+                        </div>
+                        <div class="day-column" data-day="tir">
+                            <div class="day-header">Tirsdag</div>
+                            <div class="day-body" id="day-tir"></div>
+                        </div>
+                        <div class="day-column" data-day="ons">
+                            <div class="day-header day-highlight">Onsdag <small>(Fordybelse)</small></div>
+                            <div class="day-body" id="day-ons"></div>
+                        </div>
+                        <div class="day-column" data-day="tor">
+                            <div class="day-header">Torsdag</div>
+                            <div class="day-body" id="day-tor"></div>
+                        </div>
+                        <div class="day-column" data-day="fre">
+                            <div class="day-header">Fredag</div>
+                            <div class="day-body" id="day-fre"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Huskeliste & Noter -->
+                <div class="notes-container">
+                    <label for="schedule-notes" class="notes-label">
+                        📝 Kommentarer og overvejelser til forslaget:
+                    </label>
+                    <textarea id="schedule-notes" class="notes-textarea" rows="4" 
+                        placeholder="Skriv dine overvejelser til dette forslag..."></textarea>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Rediger lektion -->
+    <dialog id="edit-modal" class="modal">
+        <form method="dialog" id="edit-form" class="modal-card">
+            <h3>Rediger lektion</h3>
+            <div class="form-group">
+                <label>Fag / Bloknavn</label>
+                <input type="text" id="edit-title" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Starttid</label>
+                    <input type="time" id="edit-start" required>
+                </div>
+                <div class="form-group">
+                    <label>Sluttid</label>
+                    <input type="time" id="edit-end" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Bemærkning / Lokale (valgfrit)</label>
+                <input type="text" id="edit-note" placeholder="fx Hal, Globen, Udendørs">
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="btn-delete-entry" class="btn btn-danger">Slet brik</button>
+                <button type="submit" class="btn btn-primary">Gem ændringer</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Modal: Opret ny brik -->
+    <dialog id="custom-block-modal" class="modal">
+        <form method="dialog" id="custom-block-form" class="modal-card">
+            <h3>Opret ny skemabrik</h3>
+            <div class="form-group">
+                <label>Brikkens navn</label>
+                <input type="text" id="custom-title" placeholder="fx Specialfag, Trænerakademi..." required>
+            </div>
+            <div class="form-group">
+                <label>Farve</label>
+                <input type="color" id="custom-color" value="#0ea5e9" style="height: 42px; width: 100%; cursor: pointer;">
+            </div>
+            <div class="form-group">
+                <label>Standard varighed</label>
+                <select id="custom-duration">
+                    <option value="45">45 minutter</option>
+                    <option value="60">60 minutter</option>
+                    <option value="75">75 minutter (1t 15m)</option>
+                    <option value="90" selected>90 minutter (1t 30m)</option>
+                    <option value="120">120 minutter (2 timer)</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="btn-cancel-custom-block" class="btn btn-subtle">Annuller</button>
+                <button type="submit" class="btn btn-primary">Opret brik</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script type="module" src="./script.js"></script>
+</body>
+</html>

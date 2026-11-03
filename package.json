@@ -1,0 +1,21 @@
+{
+"name": "vih-fag",
+"version": "1.0.0",
+"description": "Lokal udviklingsserver til VIH Fag udvikling",
+"main": "index.html",
+"scripts": {
+"start": "vite",
+"build": "vite build",
+"preview": "vite preview"
+},
+"keywords": [
+"escape-room",
+"decoder",
+"spil"
+],
+"author": "VIH",
+"license": "ISC",
+"devDependencies": {
+"vite": "^5.2.0"
+}
+}

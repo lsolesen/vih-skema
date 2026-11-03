@@ -1,0 +1,50 @@
+{
+    "id": "proto_forslag_1x_efteraar",
+    "name": "Skemaforslag 1x - Efterår (Fordybelsesdag)",
+    "notes": "• Onsdag fungerer som sammenhængende fordybelsesdag i Kompetencefag.\n• Tirsdag formiddag giver god tid til lærermøde, elevmøde og hovedrengøring.\n• Idræt 1 har 3 blokke (M, O, F) og Idræt 2 har 2 blokke (T, T).",
+    "schedule": [
+        { "id": "1", "day": "man", "title": "Morgenmad", "start": "07:30", "end": "07:55", "color": "#86efac", "textColor": "#064e3b" },
+        { "id": "2", "day": "man", "title": "Fælles + Team", "start": "08:00", "end": "10:00", "color": "#ef4444", "textColor": "#ffffff" },
+        { "id": "3", "day": "man", "title": "Inspirationsfag", "start": "10:20", "end": "11:50", "color": "#eab308", "textColor": "#000000" },
+        { "id": "4", "day": "man", "title": "Frokost", "start": "12:00", "end": "12:30", "color": "#86efac", "textColor": "#064e3b" },
+        { "id": "5", "day": "man", "title": "Rengøring", "start": "12:30", "end": "13:00", "color": "#bbf7d0", "textColor": "#064e3b" },
+        { "id": "6", "day": "man", "title": "Idræt 1", "start": "14:00", "end": "15:30", "color": "#38bdf8", "textColor": "#0f172a" },
+        { "id": "7", "day": "man", "title": "Udvalgstid", "start": "19:00", "end": "21:30", "color": "#0d9488", "textColor": "#ffffff" },
+
+        { "id": "8", "day": "tir", "title": "Morgenmad", "start": "07:30", "end": "07:55", "color": "#86efac", "textColor": "#064e3b" },
+        { "id": "9", "day": "tir", "title": "Morgensamling", "start": "08:00", "end": "08:30", "color": "#c084fc", "textColor": "#ffffff" },
+        { "id": "10", "day": "tir", "title": "DGL", "start": "08:45", "end": "10:00", "color": "#f97316", "textColor": "#ffffff" },
+        { "id": "11", "day": "tir", "title": "Lærermøde / Elevmøde", "start": "10:20", "end": "11:50", "color": "#ef4444", "textColor": "#ffffff", "note": "Hovedrengøring" },
+        { "id": "12", "day": "tir", "title": "Frokost", "start": "12:00", "end": "12:30", "color": "#86efac", "textColor": "#064e3b" },
+        { "id": "13", "day": "tir", "title": "Rengøring", "start": "12:30", "end": "13:00", "color": "#bbf7d0", "textColor": "#064e3b" },
+        { "id": "14", "day": "tir", "title": "Idræt 2", "start": "14:00", "end": "15:30", "color": "#2563eb", "textColor": "#ffffff" },
+        { "id": "15", "day": "tir", "title": "Aftensmad", "start": "17:30", "end": "18:15", "color": "#86efac", "textColor": "#064e3b" },
+        { "id": "16", "day": "tir", "title": "Højskoleaften", "start": "19:00", "end": "21:30", "color": "#7c3aed", "textColor": "#ffffff" },
+
+        { "id": "17", "day": "ons", "title": "Morgenmad", "start": "07:30", "end": "07:55", "color": "#86efac", "textColor": "#064e3b" },
+        { "id": "18", "day": "ons", "title": "Connected", "start": "08:00", "end": "08:30", "color": "#a855f7", "textColor": "#ffffff" },
+        { "id": "19", "day": "ons", "title": "Kompetencefag", "start": "08:45", "end": "11:50", "color": "#22c55e", "textColor": "#ffffff", "note": "Dobbeltblok" },
+        { "id": "20", "day": "ons", "title": "Frokost", "start": "12:00", "end": "12:30", "color": "#86efac", "textColor": "#064e3b" },
+        { "id": "21", "day": "ons", "title": "Rengøring", "start": "12:30", "end": "13:00", "color": "#bbf7d0", "textColor": "#064e3b" },
+        { "id": "22", "day": "ons", "title": "Idræt 1", "start": "14:00", "end": "15:30", "color": "#38bdf8", "textColor": "#0f172a" },
+        { "id": "23", "day": "ons", "title": "Aftensmad", "start": "17:30", "end": "18:15", "color": "#86efac", "textColor": "#064e3b" },
+
+        { "id": "24", "day": "tor", "title": "Morgenmad", "start": "07:30", "end": "07:55", "color": "#86efac", "textColor": "#064e3b" },
+        { "id": "25", "day": "tor", "title": "Morgensamling", "start": "08:00", "end": "08:30", "color": "#c084fc", "textColor": "#ffffff" },
+        { "id": "26", "day": "tor", "title": "DGL", "start": "08:45", "end": "10:00", "color": "#f97316", "textColor": "#ffffff" },
+        { "id": "27", "day": "tor", "title": "BUFFER", "start": "10:20", "end": "11:50", "color": "#94a3b8", "textColor": "#ffffff" },
+        { "id": "28", "day": "tor", "title": "Frokost", "start": "12:00", "end": "12:30", "color": "#86efac", "textColor": "#064e3b" },
+        { "id": "29", "day": "tor", "title": "Rengøring", "start": "12:30", "end": "13:00", "color": "#bbf7d0", "textColor": "#064e3b" },
+        { "id": "30", "day": "tor", "title": "Idræt 2", "start": "14:00", "end": "15:30", "color": "#2563eb", "textColor": "#ffffff" },
+        { "id": "31", "day": "tor", "title": "Aftensmad", "start": "17:30", "end": "18:15", "color": "#86efac", "textColor": "#064e3b" },
+        { "id": "32", "day": "tor", "title": "Hyggeaften", "start": "19:00", "end": "21:30", "color": "#7c3aed", "textColor": "#ffffff", "note": "Ind med ske" },
+
+        { "id": "33", "day": "fre", "title": "Morgenmad", "start": "07:30", "end": "07:55", "color": "#86efac", "textColor": "#064e3b" },
+        { "id": "34", "day": "fre", "title": "Idræt 1", "start": "08:00", "end": "10:00", "color": "#38bdf8", "textColor": "#0f172a", "note": "Dobbeltblok" },
+        { "id": "35", "day": "fre", "title": "Kompetencefag", "start": "10:20", "end": "11:50", "color": "#22c55e", "textColor": "#ffffff" },
+        { "id": "36", "day": "fre", "title": "Frokost", "start": "12:00", "end": "12:30", "color": "#86efac", "textColor": "#064e3b" },
+        { "id": "37", "day": "fre", "title": "Rengøring", "start": "12:30", "end": "13:00", "color": "#bbf7d0", "textColor": "#064e3b" },
+        { "id": "38", "day": "fre", "title": "Fælles", "start": "14:00", "end": "15:30", "color": "#ef4444", "textColor": "#ffffff" },
+        { "id": "39", "day": "fre", "title": "Aftensmad", "start": "17:30", "end": "18:15", "color": "#86efac", "textColor": "#064e3b" }
+    ]
+}
