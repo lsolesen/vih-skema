@@ -41,6 +41,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const customColor = document.getElementById('custom-color');
     const customDuration = document.getElementById('custom-duration');
 
+    const btnDeleteProto = document.getElementById('btn-delete-proto');
+    const btnSaveProto = document.getElementById('btn-save-proto');
+    const btnInsertMeals = document.getElementById('btn-insert-meals');
+    const btnClearSchedule = document.getElementById('btn-clear-schedule');
+    const btnNewBlock = document.getElementById('btn-new-block');
+    const btnExportJson = document.getElementById('btn-export-json');
+    const btnExportImage = document.getElementById('btn-export-image');
+
     // --- 1. INITIALISERING ---
     function init() {
         loadFromStorage();
@@ -64,11 +72,10 @@ document.addEventListener('DOMContentLoaded', () => {
         setupDragAndDrop();
     }
 
-function buildTimeAxis() {
+    function buildTimeAxis() {
         if (!timeAxisEl) return;
         timeAxisEl.innerHTML = '';
 
-        // Spacer der matcher overskrifterne (Mandag, Tirsdag osv.)
         const headerSpacer = document.createElement('div');
         headerSpacer.className = 'time-axis-header';
         timeAxisEl.appendChild(headerSpacer);
@@ -88,7 +95,6 @@ function buildTimeAxis() {
             timeAxisEl.appendChild(tick);
         }
 
-        // Sidste markør kl. 22:00 i bunden
         const lastTick = document.createElement('div');
         lastTick.className = 'time-tick-last';
         const lastLabel = document.createElement('span');
@@ -103,23 +109,25 @@ function buildTimeAxis() {
         if (!statusBadge || !statusBadgeText) return;
 
         if (isModified) {
-            if (protoSelect) protoSelect.value = "";
             statusBadge.className = 'status-badge status-modified';
             statusBadgeText.textContent = '✏️ Kladde (ugemt ændring)';
         } else {
             statusBadge.className = 'status-badge status-saved';
             statusBadgeText.textContent = '★ Skabelon aktiv';
         }
+
+        // Hold slet-knappen synlig hvis forslaget oprindeligt er et eget gemt forslag
+        if (btnDeleteProto) {
+            btnDeleteProto.style.display = (activeProtoId && activeProtoId.startsWith('custom_proto_')) ? 'inline-block' : 'none';
+        }
     }
 
-    // --- 2. FARVELOGIK (Dynamisk opslag) ---
+    // --- 2. FARVELOGIK ---
     function getBlockColors(entry) {
-        // Hvis brugeren specifikt har bedt om at overskrive farven på denne brik
         if (entry.colorOverride && entry.overrideColor) {
             return { color: entry.overrideColor, textColor: entry.overrideTextColor || '#ffffff' };
         }
 
-        // Ellers slå op i paletten baseret på navnet (title)
         const allBlocks = [...SETTINGS.defaultBlocks, ...customBlocks, ...SETTINGS.mealBlocks];
         const paletteMatch = allBlocks.find(b => b.title === entry.title);
         
@@ -127,11 +135,10 @@ function buildTimeAxis() {
             return { color: paletteMatch.color, textColor: paletteMatch.textColor || '#ffffff' };
         }
 
-        // Fallback hvis den slet ikke findes (hvis man fx har omdøbt brikken til noget ukendt)
         return { color: entry.color || '#cbd5e1', textColor: entry.textColor || '#0f172a' };
     }
 
-    // --- 3. PALETTE & TIMETÆLLER ---
+    // --- 3. PALETTE & STATS ---
     function renderPaletteAndStats() {
         if (!paletteEl) return;
         paletteEl.innerHTML = '';
@@ -191,7 +198,6 @@ function buildTimeAxis() {
                 const h = Math.floor(data.totalMin / 60);
                 const m = data.totalMin % 60;
                 
-                // Find farven dynamisk til border
                 const mockEntry = { title: title };
                 const { color } = getBlockColors(mockEntry);
                 row.style.borderLeftColor = color;
@@ -202,7 +208,7 @@ function buildTimeAxis() {
         }
     }
 
-    // --- 4. DRAG & DROP ---
+    // --- 4. DRAG FRA PALETTE TIL SKEMA ---
     function setupDragAndDrop() {
         const dayBodies = document.querySelectorAll('.day-body');
         dayBodies.forEach(col => {
@@ -238,8 +244,8 @@ function buildTimeAxis() {
                     title: blockData.title,
                     start: startStr,
                     end: endStr,
-                    color: blockData.color,         // Original backup
-                    textColor: blockData.textColor, // Original backup
+                    color: blockData.color,
+                    textColor: blockData.textColor,
                     note: '',
                     colorOverride: false,
                     overrideColor: ''
@@ -274,7 +280,6 @@ function buildTimeAxis() {
             const topPx = ((startMin - timelineStartMinutes) / 60) * pixelPerHour;
             const heightPx = (duration / 60) * pixelPerHour;
 
-            // HENT FARVEN DYNAMISK!
             const { color, textColor } = getBlockColors(entry);
 
             const blockEl = document.createElement('div');
@@ -310,7 +315,7 @@ function buildTimeAxis() {
         renderPaletteAndStats();
     }
 
-    // --- 6. FLYT & ÆNDR LÆNGDE ---
+    // --- 6. FLYT BRIKKER (BÅDE TID & PÅ TVÆRS AF DAGE) + FORLÆNG/FORKORT ---
     function attachDragAndResize(blockEl, entry) {
         const resizeHandle = blockEl.querySelector('.block-resize-handle');
         const timeDisplay = blockEl.querySelector('.block-time');
@@ -318,6 +323,7 @@ function buildTimeAxis() {
         const timelineStartMin = startHour * 60;
         const timelineEndMin = endHour * 60;
 
+        // A) Træk i bunden for at ændre varighed
         resizeHandle.addEventListener('pointerdown', (e) => {
             e.stopPropagation();
             blockEl.classList.add('is-resizing');
@@ -358,9 +364,11 @@ function buildTimeAxis() {
             window.addEventListener('pointerup', onPointerUp);
         });
 
+        // B) Flyt brikken rundt (både tid og skift mellem dage)
         blockEl.addEventListener('pointerdown', (e) => {
             if (e.target.closest('.block-close-btn') || e.target.closest('.block-resize-handle')) return;
 
+            const startX = e.clientX;
             const startY = e.clientY;
             const initialStartMin = timeToMinutes(entry.start);
             const initialEndMin = timeToMinutes(entry.end);
@@ -369,15 +377,29 @@ function buildTimeAxis() {
             let hasMoved = false;
             let latestStartMin = initialStartMin;
             let latestEndMin = initialEndMin;
+            let currentTargetDay = entry.day;
+
+            // Indhent positionerne på alle dagskolonner
+            const dayColumns = ['man', 'tir', 'ons', 'tor', 'fre'].map(d => {
+                const bodyEl = document.getElementById(`day-${d}`);
+                return {
+                    day: d,
+                    body: bodyEl,
+                    rect: bodyEl ? bodyEl.getBoundingClientRect() : null
+                };
+            }).filter(c => c.body && c.rect);
 
             function onPointerMove(moveEvent) {
+                const deltaX = moveEvent.clientX - startX;
                 const deltaY = moveEvent.clientY - startY;
-                if (Math.abs(deltaY) > 3) {
+
+                if (Math.abs(deltaY) > 3 || Math.abs(deltaX) > 3) {
                     hasMoved = true;
                     blockEl.classList.add('is-dragging');
                 }
                 if (!hasMoved) return;
 
+                // 1. Beregn ny tid (lodret)
                 const deltaMinutes = (deltaY / pixelPerHour) * 60;
                 const snappedDelta = Math.round(deltaMinutes / 5) * 5;
 
@@ -388,6 +410,20 @@ function buildTimeAxis() {
                 const newTopPx = ((latestStartMin - timelineStartMin) / 60) * pixelPerHour;
                 blockEl.style.top = `${newTopPx}px`;
                 timeDisplay.textContent = `${minutesToTime(latestStartMin)} - ${minutesToTime(latestEndMin)}`;
+
+                // 2. Beregn hvilken ugedag markøren er over (vandret)
+                const targetCol = dayColumns.find(c => moveEvent.clientX >= c.rect.left && moveEvent.clientX <= c.rect.right);
+                if (targetCol && targetCol.day !== currentTargetDay) {
+                    currentTargetDay = targetCol.day;
+                    targetCol.body.appendChild(blockEl);
+                }
+
+                // 3. Giv visuel feedback på modtagerkolonnen
+                dayColumns.forEach(c => {
+                    c.body.style.backgroundColor = (c.day === currentTargetDay && currentTargetDay !== entry.day)
+                        ? 'rgba(56, 189, 248, 0.12)'
+                        : '';
+                });
             }
 
             function onPointerUp() {
@@ -395,9 +431,13 @@ function buildTimeAxis() {
                 window.removeEventListener('pointermove', onPointerMove);
                 window.removeEventListener('pointerup', onPointerUp);
 
+                // Nulstil baggrundsfarver på kolonner
+                dayColumns.forEach(c => { c.body.style.backgroundColor = ''; });
+
                 if (hasMoved) {
                     entry.start = minutesToTime(latestStartMin);
                     entry.end = minutesToTime(latestEndMin);
+                    entry.day = currentTargetDay; // Opdater til den nye ugedag!
                     setModifiedState(true);
                     saveState();
                     renderSchedule();
@@ -420,7 +460,6 @@ function buildTimeAxis() {
         editEnd.value = entry.end;
         editNote.value = entry.note || '';
         
-        // Farve-override inputs
         const currentEffectiveColors = getBlockColors(entry);
         editColor.value = entry.colorOverride && entry.overrideColor ? entry.overrideColor : currentEffectiveColors.color;
         editUseOverride.checked = !!entry.colorOverride;
@@ -439,11 +478,10 @@ function buildTimeAxis() {
                 entry.end = editEnd.value;
                 entry.note = editNote.value.trim();
                 
-                // Gem evt. farveoverride
                 entry.colorOverride = editUseOverride.checked;
                 if (entry.colorOverride) {
                     entry.overrideColor = editColor.value;
-                    entry.overrideTextColor = '#ffffff'; // Simpel standard for override text
+                    entry.overrideTextColor = '#ffffff';
                 } else {
                     entry.overrideColor = '';
                 }
@@ -466,7 +504,7 @@ function buildTimeAxis() {
         });
     }
 
-    // --- 8. PROTOTYPE DROPDOWN ---
+    // --- 8. PROTOTYPE DROPDOWN & SLET FORSLAG ---
     function updateProtoDropdown() {
         if (!protoSelect) return;
         protoSelect.innerHTML = '<option value="">-- Vælg foruddefineret skema --</option>';
@@ -495,15 +533,14 @@ function buildTimeAxis() {
             protoSelect.appendChild(userGroup);
         }
 
-        if (activeProtoId && !isModified) {
+        if (activeProtoId) {
             protoSelect.value = activeProtoId;
         } else {
             protoSelect.value = "";
         }
 
-        const btnDeleteProto = document.getElementById('btn-delete-proto');
         if (btnDeleteProto) {
-            btnDeleteProto.style.display = (activeProtoId && activeProtoId.startsWith('custom_proto_') && !isModified) ? 'inline-block' : 'none';
+            btnDeleteProto.style.display = (activeProtoId && activeProtoId.startsWith('custom_proto_')) ? 'inline-block' : 'none';
         }
     }
 
@@ -534,7 +571,37 @@ function buildTimeAxis() {
         });
     }
 
-    const btnSaveProto = document.getElementById('btn-save-proto');
+    // SLET GEMT FORSLAG KNAP (Rettet: nu fuldt funktionel)
+    if (btnDeleteProto) {
+        btnDeleteProto.addEventListener('click', () => {
+            if (!activeProtoId || !activeProtoId.startsWith('custom_proto_')) return;
+            const protoToDelete = customPrototypes.find(p => p.id === activeProtoId);
+            const protoName = protoToDelete ? protoToDelete.name : 'dette forslag';
+
+            if (confirm(`Vil du slette forslaget "${protoName}" permanent?`)) {
+                customPrototypes = customPrototypes.filter(p => p.id !== activeProtoId);
+                localStorage.setItem(STORAGE_KEY_CUSTOM_PROTOS, JSON.stringify(customPrototypes));
+
+                activeProtoId = null;
+                if (SETTINGS.prototypes && SETTINGS.prototypes.length > 0) {
+                    loadPrototype(SETTINGS.prototypes[0].id, false);
+                } else if (customPrototypes.length > 0) {
+                    loadPrototype(customPrototypes[0].id, false);
+                } else {
+                    currentSchedule = [];
+                    currentTitle = "Skemaforslag";
+                    currentNotes = "";
+                    if (titleDisplay) titleDisplay.textContent = currentTitle;
+                    if (notesTextarea) notesTextarea.value = "";
+                    setModifiedState(false);
+                    updateProtoDropdown();
+                    saveState();
+                    renderSchedule();
+                }
+            }
+        });
+    }
+
     if (btnSaveProto) {
         btnSaveProto.addEventListener('click', () => {
             const name = prompt('Hvad skal dit skemaforslag hedde?', currentTitle !== 'Skemaforslag' ? currentTitle : 'Mit nye forslag');
@@ -559,7 +626,6 @@ function buildTimeAxis() {
         });
     }
 
-    const btnInsertMeals = document.getElementById('btn-insert-meals');
     if (btnInsertMeals) {
         btnInsertMeals.addEventListener('click', () => {
             const days = ['man', 'tir', 'ons', 'tor', 'fre'];
@@ -586,7 +652,6 @@ function buildTimeAxis() {
         });
     }
 
-    const btnClearSchedule = document.getElementById('btn-clear-schedule');
     if (btnClearSchedule) {
         btnClearSchedule.addEventListener('click', () => {
             if (confirm('Vil du rydde alle lektioner i skemaet?')) {
@@ -624,7 +689,6 @@ function buildTimeAxis() {
         saveState();
     });
 
-    const btnNewBlock = document.getElementById('btn-new-block');
     if (btnNewBlock && customModal) {
         btnNewBlock.addEventListener('click', () => customModal.showModal());
         const btnCancelCustomBlock = document.getElementById('btn-cancel-custom-block');
@@ -655,7 +719,6 @@ function buildTimeAxis() {
         }
     }
 
-    const btnExportJson = document.getElementById('btn-export-json');
     if (btnExportJson) {
         btnExportJson.addEventListener('click', () => {
             const prototypeObject = {
@@ -680,7 +743,6 @@ function buildTimeAxis() {
         });
     }
 
-    const btnExportImage = document.getElementById('btn-export-image');
     if (btnExportImage) {
         btnExportImage.addEventListener('click', () => {
             const target = document.getElementById('export-target');
@@ -727,8 +789,9 @@ function buildTimeAxis() {
     }
 
     function timeToMinutes(str) {
-        const [h, m] = str.split(':').map(Number);
-        return h * 60 + m;
+        if (!str) return 0;
+        const [h, m] = str.replace('.', ':').split(':').map(Number);
+        return (h || 0) * 60 + (m || 0);
     }
 
     function minutesToTime(totalMin) {
