@@ -1,0 +1,266 @@
+{
+    "id": "proto_1793887943034",
+    "name": "NIH-modellen",
+    "notes": "Baseret på NIH-modellen med 4 ligeværdige fagblokke á 2x 90 min., sen torsdag morgen og fredagsafslutning kl. 15.00.",
+    "schedule": [
+        {
+            "id": "k1_m1",
+            "day": "man",
+            "title": "Morgenmad",
+            "start": "07:15",
+            "end": "07:45"
+        },
+        {
+            "id": "k1_m2",
+            "day": "man",
+            "title": "Fællesidræt",
+            "start": "08:00",
+            "end": "09:30",
+            "note": "Hele skolen samlet"
+        },
+        {
+            "id": "k1_m3",
+            "day": "man",
+            "title": "DGL",
+            "start": "10:00",
+            "end": "11:50",
+            "note": "Valgfag / Fordybelse",
+            "colorOverride": false,
+            "overrideColor": ""
+        },
+        {
+            "id": "k1_m4",
+            "day": "man",
+            "title": "Frokost",
+            "start": "12:00",
+            "end": "12:30"
+        },
+        {
+            "id": "k1_m5",
+            "day": "man",
+            "title": "Idræt 1",
+            "start": "14:00",
+            "end": "15:30"
+        },
+        {
+            "id": "k1_m6",
+            "day": "man",
+            "title": "Aftensmad",
+            "start": "17:45",
+            "end": "18:30"
+        },
+        {
+            "id": "k1_t1",
+            "day": "tir",
+            "title": "Morgenmad",
+            "start": "07:15",
+            "end": "07:45"
+        },
+        {
+            "id": "k1_t2",
+            "day": "tir",
+            "title": "Idræt 2",
+            "start": "10:00",
+            "end": "11:50"
+        },
+        {
+            "id": "k1_t3",
+            "day": "tir",
+            "title": "Morgensamling",
+            "start": "08:00",
+            "end": "08:30",
+            "note": "Folkemødet"
+        },
+        {
+            "id": "k1_t4",
+            "day": "tir",
+            "title": "DGL",
+            "start": "08:40",
+            "end": "09:30",
+            "note": "Aktuelt & Debat"
+        },
+        {
+            "id": "k1_t5",
+            "day": "tir",
+            "title": "Frokost",
+            "start": "12:00",
+            "end": "12:30"
+        },
+        {
+            "id": "k1_t6",
+            "day": "tir",
+            "title": "Inspirationsfag",
+            "start": "14:00",
+            "end": "15:30"
+        },
+        {
+            "id": "k1_t7",
+            "day": "tir",
+            "title": "Aftensmad",
+            "start": "17:45",
+            "end": "18:30"
+        },
+        {
+            "id": "k1_o1",
+            "day": "ons",
+            "title": "Morgenmad",
+            "start": "07:15",
+            "end": "07:45"
+        },
+        {
+            "id": "k1_o2",
+            "day": "ons",
+            "title": "Kompetencefag",
+            "start": "08:00",
+            "end": "09:30"
+        },
+        {
+            "id": "k1_o3",
+            "day": "ons",
+            "title": "Morgensamling",
+            "start": "10:00",
+            "end": "10:30"
+        },
+        {
+            "id": "k1_o4",
+            "day": "ons",
+            "title": "DGL",
+            "start": "10:45",
+            "end": "11:45",
+            "note": "Tag Ordet"
+        },
+        {
+            "id": "k1_o5",
+            "day": "ons",
+            "title": "Frokost",
+            "start": "12:00",
+            "end": "12:30"
+        },
+        {
+            "id": "k1_o6",
+            "day": "ons",
+            "title": "Idræt 1",
+            "start": "14:00",
+            "end": "15:30"
+        },
+        {
+            "id": "k1_o7",
+            "day": "ons",
+            "title": "Aftensmad",
+            "start": "17:45",
+            "end": "18:30"
+        },
+        {
+            "id": "k1_o8",
+            "day": "ons",
+            "title": "Højskoleaften",
+            "start": "19:30",
+            "end": "21:30",
+            "note": "Foredrag, kultur eller kage"
+        },
+        {
+            "id": "k1_to1",
+            "day": "tor",
+            "title": "Morgenmad",
+            "start": "07:15",
+            "end": "07:45",
+            "note": "Sen morgenmad"
+        },
+        {
+            "id": "k1_to2",
+            "day": "tor",
+            "title": "Teammøde",
+            "start": "08:45",
+            "end": "09:30",
+            "note": "Basisgruppemøde"
+        },
+        {
+            "id": "k1_to4",
+            "day": "tor",
+            "title": "Frokost",
+            "start": "12:00",
+            "end": "12:30"
+        },
+        {
+            "id": "k1_to5",
+            "day": "tor",
+            "title": "Idræt 2",
+            "start": "14:00",
+            "end": "15:30"
+        },
+        {
+            "id": "k1_to6",
+            "day": "tor",
+            "title": "Aftensmad",
+            "start": "17:45",
+            "end": "18:30"
+        },
+        {
+            "id": "k1_f1",
+            "day": "fre",
+            "title": "Morgenmad",
+            "start": "07:15",
+            "end": "07:45"
+        },
+        {
+            "id": "k1_f2",
+            "day": "fre",
+            "title": "Inspirationsfag",
+            "start": "08:00",
+            "end": "09:30"
+        },
+        {
+            "id": "k1_f3",
+            "day": "fre",
+            "title": "Kompetencefag",
+            "start": "10:00",
+            "end": "11:50"
+        },
+        {
+            "id": "k1_f4",
+            "day": "fre",
+            "title": "Frokost",
+            "start": "12:00",
+            "end": "12:30"
+        },
+        {
+            "id": "k1_f5",
+            "day": "fre",
+            "title": "Fællessang",
+            "start": "14:00",
+            "end": "15:30",
+            "note": "Sang og weekendstart"
+        },
+        {
+            "id": "k1_f6",
+            "day": "fre",
+            "title": "Aftensmad",
+            "start": "17:45",
+            "end": "18:30"
+        },
+        {
+            "id": "entry_1793887564062",
+            "day": "tor",
+            "title": "Morgensamling",
+            "start": "08:00",
+            "end": "08:30",
+            "color": "#c084fc",
+            "textColor": "#ffffff",
+            "note": "",
+            "colorOverride": false,
+            "overrideColor": ""
+        },
+        {
+            "id": "entry_1793887618718",
+            "day": "tor",
+            "title": "Foredrag / Lærermøde",
+            "start": "10:00",
+            "end": "11:50",
+            "color": "#94a3b8",
+            "textColor": "#ffffff",
+            "note": "",
+            "colorOverride": false,
+            "overrideColor": ""
+        }
+    ]
+}

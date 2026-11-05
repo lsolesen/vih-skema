@@ -1,0 +1,316 @@
+{
+    "id": "proto_1793888144028",
+    "name": "Viborg-model (Ligestillet)",
+    "notes": "Viborgs modulstruktur tilpasset VIH: Frokost 12.00-12.30, Idræt 1, 2 og Kompetencefag ligestillet (2x 90 min hver), DGL kl. 10.30-12.00 og Fællesidræt torsdag.",
+    "schedule": [
+        {
+            "id": "vb_m1",
+            "day": "man",
+            "title": "Morgenmad",
+            "start": "07:30",
+            "end": "08:00"
+        },
+        {
+            "id": "vb_m2",
+            "day": "man",
+            "title": "Morgensamling",
+            "start": "08:00",
+            "end": "08:25"
+        },
+        {
+            "id": "vb_m3",
+            "day": "man",
+            "title": "Idræt 1",
+            "start": "08:30",
+            "end": "10:00"
+        },
+        {
+            "id": "vb_m4",
+            "day": "man",
+            "title": "DGL",
+            "start": "10:30",
+            "end": "12:00",
+            "note": "Foredrag & debat"
+        },
+        {
+            "id": "vb_m5",
+            "day": "man",
+            "title": "Frokost",
+            "start": "12:00",
+            "end": "12:30"
+        },
+        {
+            "id": "vb_m6",
+            "day": "man",
+            "title": "Rengøring",
+            "start": "12:30",
+            "end": "13:00"
+        },
+        {
+            "id": "vb_m7",
+            "day": "man",
+            "title": "Kompetencefag",
+            "start": "13:30",
+            "end": "15:00"
+        },
+        {
+            "id": "vb_m8",
+            "day": "man",
+            "title": "Aftensmad",
+            "start": "17:30",
+            "end": "18:15"
+        },
+        {
+            "id": "vb_t1",
+            "day": "tir",
+            "title": "Morgenmad",
+            "start": "07:30",
+            "end": "08:00",
+            "note": "Sen morgenmad"
+        },
+        {
+            "id": "vb_t2",
+            "day": "tir",
+            "title": "Rengøring",
+            "start": "08:30",
+            "end": "10:00",
+            "note": "Hovedrengøring & tjek"
+        },
+        {
+            "id": "vb_t3",
+            "day": "tir",
+            "title": "Teammøde",
+            "start": "12:30",
+            "end": "13:00",
+            "note": "Kontaktgruppemøde"
+        },
+        {
+            "id": "vb_t4",
+            "day": "tir",
+            "title": "DGL",
+            "start": "10:30",
+            "end": "12:00",
+            "note": "Eksistens & etik"
+        },
+        {
+            "id": "vb_t5",
+            "day": "tir",
+            "title": "Frokost",
+            "start": "12:00",
+            "end": "12:30"
+        },
+        {
+            "id": "vb_t6",
+            "day": "tir",
+            "title": "Idræt 2",
+            "start": "13:30",
+            "end": "15:00"
+        },
+        {
+            "id": "vb_t7",
+            "day": "tir",
+            "title": "Aftensmad",
+            "start": "17:30",
+            "end": "18:15"
+        },
+        {
+            "id": "vb_o1",
+            "day": "ons",
+            "title": "Morgenmad",
+            "start": "07:30",
+            "end": "08:00"
+        },
+        {
+            "id": "vb_o2",
+            "day": "ons",
+            "title": "Morgensamling",
+            "start": "08:00",
+            "end": "08:25"
+        },
+        {
+            "id": "vb_o3",
+            "day": "ons",
+            "title": "Idræt 1",
+            "start": "08:30",
+            "end": "10:00"
+        },
+        {
+            "id": "vb_o4",
+            "day": "ons",
+            "title": "DGL",
+            "start": "10:30",
+            "end": "12:00",
+            "note": "Debat & samfund"
+        },
+        {
+            "id": "vb_o5",
+            "day": "ons",
+            "title": "Frokost",
+            "start": "12:00",
+            "end": "12:30"
+        },
+        {
+            "id": "vb_o6",
+            "day": "ons",
+            "title": "Rengøring",
+            "start": "12:30",
+            "end": "13:00"
+        },
+        {
+            "id": "vb_o7",
+            "day": "ons",
+            "title": "Inspirationsfag",
+            "start": "13:30",
+            "end": "15:00"
+        },
+        {
+            "id": "vb_o8",
+            "day": "ons",
+            "title": "Aftensmad",
+            "start": "17:30",
+            "end": "18:15"
+        },
+        {
+            "id": "vb_o9",
+            "day": "ons",
+            "title": "Højskoleaften",
+            "start": "19:30",
+            "end": "21:30"
+        },
+        {
+            "id": "vb_to1",
+            "day": "tor",
+            "title": "Morgenmad",
+            "start": "07:30",
+            "end": "08:00"
+        },
+        {
+            "id": "vb_to2",
+            "day": "tor",
+            "title": "Morgensamling",
+            "start": "08:00",
+            "end": "08:25"
+        },
+        {
+            "id": "vb_to3",
+            "day": "tor",
+            "title": "Idræt 2",
+            "start": "08:30",
+            "end": "10:00"
+        },
+        {
+            "id": "vb_to4",
+            "day": "tor",
+            "title": "DGL",
+            "start": "10:30",
+            "end": "12:00",
+            "note": "Livsanskuelse"
+        },
+        {
+            "id": "vb_to5",
+            "day": "tor",
+            "title": "Frokost",
+            "start": "12:00",
+            "end": "12:30"
+        },
+        {
+            "id": "vb_to6",
+            "day": "tor",
+            "title": "Rengøring",
+            "start": "12:30",
+            "end": "13:00"
+        },
+        {
+            "id": "vb_to7",
+            "day": "tor",
+            "title": "Kompetencefag",
+            "start": "13:30",
+            "end": "15:00"
+        },
+        {
+            "id": "vb_to8",
+            "day": "tor",
+            "title": "Fællesidræt",
+            "start": "15:00",
+            "end": "16:00"
+        },
+        {
+            "id": "vb_to9",
+            "day": "tor",
+            "title": "Aftensmad",
+            "start": "17:30",
+            "end": "18:15"
+        },
+        {
+            "id": "vb_f1",
+            "day": "fre",
+            "title": "Morgenmad",
+            "start": "07:30",
+            "end": "08:00"
+        },
+        {
+            "id": "vb_f2",
+            "day": "fre",
+            "title": "Morgensamling",
+            "start": "08:00",
+            "end": "08:25"
+        },
+        {
+            "id": "vb_f3",
+            "day": "fre",
+            "title": "Inspirationsfag",
+            "start": "08:30",
+            "end": "10:00"
+        },
+        {
+            "id": "vb_f4",
+            "day": "fre",
+            "title": "Elevmøde / Lærermøde",
+            "start": "10:30",
+            "end": "12:00",
+            "note": "Fællesmøde"
+        },
+        {
+            "id": "vb_f5",
+            "day": "fre",
+            "title": "Frokost",
+            "start": "12:00",
+            "end": "12:30"
+        },
+        {
+            "id": "vb_f6",
+            "day": "fre",
+            "title": "Rengøring",
+            "start": "12:30",
+            "end": "13:00",
+            "note": "Weekendklargøring"
+        },
+        {
+            "id": "vb_f7",
+            "day": "fre",
+            "title": "Fællessang",
+            "start": "13:00",
+            "end": "14:30",
+            "note": "Sang & weekendafrunding"
+        },
+        {
+            "id": "vb_f8",
+            "day": "fre",
+            "title": "Aftensmad",
+            "start": "17:30",
+            "end": "18:15"
+        },
+        {
+            "id": "entry_1793888040814",
+            "day": "tir",
+            "title": "Morgensamling",
+            "start": "08:00",
+            "end": "08:25",
+            "color": "#c084fc",
+            "textColor": "#ffffff",
+            "note": "",
+            "colorOverride": false,
+            "overrideColor": ""
+        }
+    ]
+}

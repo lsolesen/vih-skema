@@ -1,0 +1,308 @@
+{
+    "id": "proto_1793888354392",
+    "name": "IHS-modellen",
+    "notes": "Baseret på IHS med massive eftermiddagsblokke (3,5 t), Inspirationsfag som torsdags-interessefag og VIH spisetider (7.30, 12.00, 17.30).",
+    "schedule": [
+        {
+            "id": "ihs_m1",
+            "day": "man",
+            "title": "Morgenmad",
+            "start": "07:30",
+            "end": "07:55"
+        },
+        {
+            "id": "ihs_m2",
+            "day": "man",
+            "title": "Morgensamling",
+            "start": "08:00",
+            "end": "08:30",
+            "note": "Morgensang"
+        },
+        {
+            "id": "ihs_m3",
+            "day": "man",
+            "title": "Fællesdans & Bevægelse",
+            "start": "08:35",
+            "end": "10:05",
+            "note": "Fællesdans og bevægelse",
+            "colorOverride": false,
+            "overrideColor": ""
+        },
+        {
+            "id": "ihs_m4",
+            "day": "man",
+            "title": "DGL",
+            "start": "10:30",
+            "end": "12:00",
+            "note": "Højskoletid & foredrag"
+        },
+        {
+            "id": "ihs_m5",
+            "day": "man",
+            "title": "Frokost",
+            "start": "12:00",
+            "end": "12:30"
+        },
+        {
+            "id": "ihs_m6",
+            "day": "man",
+            "title": "Rengøring",
+            "start": "12:30",
+            "end": "13:00"
+        },
+        {
+            "id": "ihs_m7",
+            "day": "man",
+            "title": "Idræt 1",
+            "start": "13:30",
+            "end": "17:00",
+            "note": "Speciale idræt 1"
+        },
+        {
+            "id": "ihs_m8",
+            "day": "man",
+            "title": "Aftensmad",
+            "start": "17:30",
+            "end": "18:00"
+        },
+        {
+            "id": "ihs_t1",
+            "day": "tir",
+            "title": "Morgenmad",
+            "start": "07:30",
+            "end": "07:55"
+        },
+        {
+            "id": "ihs_t2",
+            "day": "tir",
+            "title": "Morgensamling",
+            "start": "08:00",
+            "end": "08:30",
+            "note": "Lærermorgensamling"
+        },
+        {
+            "id": "ihs_t3",
+            "day": "tir",
+            "title": "DGL",
+            "start": "08:35",
+            "end": "10:05",
+            "note": "Livsfortælling"
+        },
+        {
+            "id": "ihs_t4",
+            "day": "tir",
+            "title": "Rengøring",
+            "start": "10:30",
+            "end": "12:00",
+            "note": "Hovedrengøring & tjek"
+        },
+        {
+            "id": "ihs_t5",
+            "day": "tir",
+            "title": "Frokost",
+            "start": "12:00",
+            "end": "12:30"
+        },
+        {
+            "id": "ihs_t6",
+            "day": "tir",
+            "title": "Idræt 2",
+            "start": "13:30",
+            "end": "17:00",
+            "note": "Speciale idræt 2",
+            "colorOverride": false,
+            "overrideColor": ""
+        },
+        {
+            "id": "ihs_t7",
+            "day": "tir",
+            "title": "Aftensmad",
+            "start": "17:30",
+            "end": "18:00"
+        },
+        {
+            "id": "ihs_o1",
+            "day": "ons",
+            "title": "Morgenmad",
+            "start": "07:30",
+            "end": "07:55"
+        },
+        {
+            "id": "ihs_o2",
+            "day": "ons",
+            "title": "Morgensamling",
+            "start": "08:00",
+            "end": "08:30"
+        },
+        {
+            "id": "ihs_o3",
+            "day": "ons",
+            "title": "DGL",
+            "start": "08:35",
+            "end": "09:45",
+            "note": "Almene fag"
+        },
+        {
+            "id": "ihs_o4",
+            "day": "ons",
+            "title": "Teammøde",
+            "start": "09:50",
+            "end": "10:50",
+            "note": "Kontaktgruppemøde"
+        },
+        {
+            "id": "ihs_o5",
+            "day": "ons",
+            "title": "Elevmøde / Lærermøde",
+            "start": "10:55",
+            "end": "11:55",
+            "note": "Skolemøde"
+        },
+        {
+            "id": "ihs_o6",
+            "day": "ons",
+            "title": "Frokost",
+            "start": "12:00",
+            "end": "12:30"
+        },
+        {
+            "id": "ihs_o7",
+            "day": "ons",
+            "title": "Rengøring",
+            "start": "12:30",
+            "end": "13:00"
+        },
+        {
+            "id": "ihs_o8",
+            "day": "ons",
+            "title": "Kompetencefag",
+            "start": "13:30",
+            "end": "16:30",
+            "note": "Fordybelse"
+        },
+        {
+            "id": "ihs_o9",
+            "day": "ons",
+            "title": "Aftensmad",
+            "start": "17:30",
+            "end": "18:00"
+        },
+        {
+            "id": "ihs_o10",
+            "day": "ons",
+            "title": "Højskoleaften",
+            "start": "19:30",
+            "end": "21:30",
+            "note": "Fællesaften"
+        },
+        {
+            "id": "ihs_to1",
+            "day": "tor",
+            "title": "Morgenmad",
+            "start": "07:30",
+            "end": "07:55"
+        },
+        {
+            "id": "ihs_to2",
+            "day": "tor",
+            "title": "Morgensamling",
+            "start": "08:00",
+            "end": "08:30",
+            "note": "Elevmorgensamling"
+        },
+        {
+            "id": "ihs_to3",
+            "day": "tor",
+            "title": "Inspirationsfag",
+            "start": "08:35",
+            "end": "12:00",
+            "note": "Interessefag (lang workshop)"
+        },
+        {
+            "id": "ihs_to4",
+            "day": "tor",
+            "title": "Frokost",
+            "start": "12:00",
+            "end": "12:30"
+        },
+        {
+            "id": "ihs_to5",
+            "day": "tor",
+            "title": "Rengøring",
+            "start": "12:30",
+            "end": "13:00"
+        },
+        {
+            "id": "ihs_to6",
+            "day": "tor",
+            "title": "Idræt 1",
+            "start": "13:30",
+            "end": "17:00",
+            "note": "Speciale modul 2 / Turnus",
+            "colorOverride": false,
+            "overrideColor": ""
+        },
+        {
+            "id": "ihs_to7",
+            "day": "tor",
+            "title": "Aftensmad",
+            "start": "17:30",
+            "end": "18:00"
+        },
+        {
+            "id": "ihs_f1",
+            "day": "fre",
+            "title": "Morgenmad",
+            "start": "07:30",
+            "end": "07:55"
+        },
+        {
+            "id": "ihs_f2",
+            "day": "fre",
+            "title": "Morgensamling",
+            "start": "08:00",
+            "end": "09:15",
+            "note": "Nyhedstimen & Morgensang"
+        },
+        {
+            "id": "ihs_f3",
+            "day": "fre",
+            "title": "DGL",
+            "start": "09:30",
+            "end": "12:00",
+            "note": "Almene fag & samfundsdebat"
+        },
+        {
+            "id": "ihs_f4",
+            "day": "fre",
+            "title": "Frokost",
+            "start": "12:00",
+            "end": "12:30"
+        },
+        {
+            "id": "ihs_f5",
+            "day": "fre",
+            "title": "Rengøring",
+            "start": "12:30",
+            "end": "13:00",
+            "note": "Weekendklargøring"
+        },
+        {
+            "id": "ihs_f6",
+            "day": "fre",
+            "title": "Idræt 2",
+            "start": "13:30",
+            "end": "15:30",
+            "note": "Idrætsfag & fælles afslutning",
+            "colorOverride": false,
+            "overrideColor": ""
+        },
+        {
+            "id": "ihs_f7",
+            "day": "fre",
+            "title": "Aftensmad",
+            "start": "17:30",
+            "end": "18:00"
+        }
+    ]
+}

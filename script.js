@@ -1,22 +1,22 @@
-import { VIH_SKEMA_SETTINGS } from './settings.js';
+import * as settingsModule from './settings.js';
 import { allPrototypes } from './prototypes.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-    const SETTINGS = VIH_SKEMA_SETTINGS;
-    const STORAGE_KEY_CURRENT = 'vih_active_schedule_data';
-    const STORAGE_KEY_CUSTOM_BLOCKS = 'vih_custom_schedule_blocks';
-    const STORAGE_KEY_CUSTOM_PROTOS = 'vih_custom_schedule_protos';
+const SETTINGS = settingsModule.VIH_SKEMA_SETTINGS || settingsModule.VIH_SETTINGS || {};
+const STORAGE_KEY_CURRENT = 'vih_active_schedule_data';
+const STORAGE_KEY_CUSTOM_BLOCKS = 'vih_custom_schedule_blocks';
+const STORAGE_KEY_CUSTOM_PROTOS = 'vih_custom_schedule_protos';
 
-    // State
-    let currentSchedule = [];
-    let currentNotes = "";
-    let customBlocks = [];
-    let customPrototypes = [];
-    let activeProtoId = null;
-    let currentTitle = "Skemaforslag";
-    let isModified = false;
-    let editingEntryId = null;
+// State
+let currentSchedule = [];
+let currentNotes = "";
+let customBlocks = [];
+let customPrototypes = [];
+let activeProtoId = null;
+let currentTitle = "Skemaforslag";
+let isModified = false;
+let editingEntryId = null;
 
+function startApp() {
     // DOM referencer
     const paletteEl = document.getElementById('unified-palette') || document.getElementById('block-palette');
     const statsContainer = document.getElementById('stats-container');
@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         headerSpacer.className = 'time-axis-header';
         timeAxisEl.appendChild(headerSpacer);
 
-        const { startHour, endHour, pixelPerHour } = SETTINGS.timeline;
+        const { startHour, endHour, pixelPerHour } = SETTINGS.timeline || { startHour: 7, endHour: 22, pixelPerHour: 48 };
 
         for (let hour = startHour; hour < endHour; hour++) {
             const tick = document.createElement('div');
@@ -116,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
             statusBadgeText.textContent = '★ Skabelon aktiv';
         }
 
-        // Hold slet-knappen synlig hvis forslaget oprindeligt er et eget gemt forslag
         if (btnDeleteProto) {
             btnDeleteProto.style.display = (activeProtoId && activeProtoId.startsWith('custom_proto_')) ? 'inline-block' : 'none';
         }
@@ -128,7 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return { color: entry.overrideColor, textColor: entry.overrideTextColor || '#ffffff' };
         }
 
-        const allBlocks = [...SETTINGS.defaultBlocks, ...customBlocks, ...SETTINGS.mealBlocks];
+        const defaultBlocks = SETTINGS.defaultBlocks || [];
+        const mealBlocks = SETTINGS.mealBlocks || [];
+        const allBlocks = [...defaultBlocks, ...customBlocks, ...mealBlocks];
         const paletteMatch = allBlocks.find(b => b.title === entry.title);
         
         if (paletteMatch) {
@@ -154,7 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
             counts[entry.title].totalMin += dur;
         });
 
-        const allBlocks = [...SETTINGS.defaultBlocks, ...customBlocks];
+        const defaultBlocks = SETTINGS.defaultBlocks || [];
+        const allBlocks = [...defaultBlocks, ...customBlocks];
 
         allBlocks.forEach(b => {
             const stat = counts[b.title] || { count: 0, totalMin: 0 };
@@ -266,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (body) body.innerHTML = '';
         });
 
-        const { startHour, pixelPerHour } = SETTINGS.timeline;
+        const { startHour, pixelPerHour } = SETTINGS.timeline || { startHour: 7, pixelPerHour: 48 };
         const timelineStartMinutes = startHour * 60;
 
         currentSchedule.forEach(entry => {
@@ -315,7 +317,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPaletteAndStats();
     }
 
-    // --- 6. FLYT BRIKKER (BÅDE TID & PÅ TVÆRS AF DAGE) + FORLÆNG/FORKORT ---
     function attachDragAndResize(blockEl, entry) {
         const resizeHandle = blockEl.querySelector('.block-resize-handle');
         const timeDisplay = blockEl.querySelector('.block-time');
@@ -323,7 +324,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const timelineStartMin = startHour * 60;
         const timelineEndMin = endHour * 60;
 
-        // A) Træk i bunden for at ændre varighed
         resizeHandle.addEventListener('pointerdown', (e) => {
             e.stopPropagation();
             blockEl.classList.add('is-resizing');
@@ -364,7 +364,6 @@ document.addEventListener('DOMContentLoaded', () => {
             window.addEventListener('pointerup', onPointerUp);
         });
 
-        // B) Flyt brikken rundt (både tid og skift mellem dage)
         blockEl.addEventListener('pointerdown', (e) => {
             if (e.target.closest('.block-close-btn') || e.target.closest('.block-resize-handle')) return;
 
@@ -379,7 +378,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let latestEndMin = initialEndMin;
             let currentTargetDay = entry.day;
 
-            // Indhent positionerne på alle dagskolonner
             const dayColumns = ['man', 'tir', 'ons', 'tor', 'fre'].map(d => {
                 const bodyEl = document.getElementById(`day-${d}`);
                 return {
@@ -399,7 +397,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (!hasMoved) return;
 
-                // 1. Beregn ny tid (lodret)
                 const deltaMinutes = (deltaY / pixelPerHour) * 60;
                 const snappedDelta = Math.round(deltaMinutes / 5) * 5;
 
@@ -411,14 +408,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 blockEl.style.top = `${newTopPx}px`;
                 timeDisplay.textContent = `${minutesToTime(latestStartMin)} - ${minutesToTime(latestEndMin)}`;
 
-                // 2. Beregn hvilken ugedag markøren er over (vandret)
                 const targetCol = dayColumns.find(c => moveEvent.clientX >= c.rect.left && moveEvent.clientX <= c.rect.right);
                 if (targetCol && targetCol.day !== currentTargetDay) {
                     currentTargetDay = targetCol.day;
                     targetCol.body.appendChild(blockEl);
                 }
 
-                // 3. Giv visuel feedback på modtagerkolonnen
                 dayColumns.forEach(c => {
                     c.body.style.backgroundColor = (c.day === currentTargetDay && currentTargetDay !== entry.day)
                         ? 'rgba(56, 189, 248, 0.12)'
@@ -431,13 +426,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.removeEventListener('pointermove', onPointerMove);
                 window.removeEventListener('pointerup', onPointerUp);
 
-                // Nulstil baggrundsfarver på kolonner
                 dayColumns.forEach(c => { c.body.style.backgroundColor = ''; });
 
                 if (hasMoved) {
                     entry.start = minutesToTime(latestStartMin);
                     entry.end = minutesToTime(latestEndMin);
-                    entry.day = currentTargetDay; // Opdater til den nye ugedag!
+                    entry.day = currentTargetDay;
                     setModifiedState(true);
                     saveState();
                     renderSchedule();
@@ -504,40 +498,70 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 8. PROTOTYPE DROPDOWN & SLET FORSLAG ---
+    // --- 8. PROTOTYPE DROPDOWN (UDEN DUBLIKATION) ---
     function updateProtoDropdown() {
         if (!protoSelect) return;
         protoSelect.innerHTML = '<option value="">-- Vælg foruddefineret skema --</option>';
 
         if (SETTINGS.prototypes && SETTINGS.prototypes.length > 0) {
-            const builtGroup = document.createElement('optgroup');
-            builtGroup.label = 'Faste prototyper (fra /prototypes)';
-            SETTINGS.prototypes.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = p.name;
-                builtGroup.appendChild(opt);
+            const groupsMap = {};
+
+            SETTINGS.prototypes.forEach((p, idx) => {
+                const grpName = p.group || 'Faste skabeloner';
+                const folderOrder = p._folderOrder !== undefined ? p._folderOrder : 999;
+
+                if (!groupsMap[grpName]) {
+                    groupsMap[grpName] = {
+                        name: grpName,
+                        order: folderOrder,
+                        items: []
+                    };
+                }
+                groupsMap[grpName].items.push({
+                    id: p.id || `builtin_${idx}`,
+                    name: String(p.name || 'Uden navn'),
+                    order: p.order !== undefined ? p.order : idx
+                });
             });
-            protoSelect.appendChild(builtGroup);
+
+            // 1. Sorter optgroups: Roden (order: 0) øverst, derefter 1_, 2_, 3_, 99_
+            const sortedGroups = Object.values(groupsMap).sort((a, b) => {
+                if (a.order !== b.order) return a.order - b.order;
+                return (a.name || '').localeCompare(b.name || '', undefined, { numeric: true });
+            });
+
+            // 2. Generer optgroups i HTML
+            sortedGroups.forEach(grp => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = `── ${grp.name} ──`;
+
+                grp.items.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+
+                grp.items.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.name;
+                    optgroup.appendChild(opt);
+                });
+
+                protoSelect.appendChild(optgroup);
+            });
         }
 
-        if (customPrototypes.length > 0) {
+        // 3. Egne forslag fra localStorage
+        if (customPrototypes && customPrototypes.length > 0) {
             const userGroup = document.createElement('optgroup');
-            userGroup.label = 'Mine egne forslag';
+            userGroup.label = '── Mine egne forslag ──';
             customPrototypes.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.id;
-                opt.textContent = p.name;
+                opt.textContent = p.name || 'Uden navn';
                 userGroup.appendChild(opt);
             });
             protoSelect.appendChild(userGroup);
         }
 
-        if (activeProtoId) {
-            protoSelect.value = activeProtoId;
-        } else {
-            protoSelect.value = "";
-        }
+        protoSelect.value = activeProtoId || "";
 
         if (btnDeleteProto) {
             btnDeleteProto.style.display = (activeProtoId && activeProtoId.startsWith('custom_proto_')) ? 'inline-block' : 'none';
@@ -551,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (proto) {
             activeProtoId = proto.id;
             currentTitle = proto.name;
-            currentSchedule = JSON.parse(JSON.stringify(proto.schedule));
+            currentSchedule = JSON.parse(JSON.stringify(proto.schedule || []));
             currentNotes = proto.notes || "";
             if (notesTextarea) notesTextarea.value = currentNotes;
             if (titleDisplay) titleDisplay.textContent = currentTitle;
@@ -571,7 +595,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // SLET GEMT FORSLAG KNAP (Rettet: nu fuldt funktionel)
     if (btnDeleteProto) {
         btnDeleteProto.addEventListener('click', () => {
             if (!activeProtoId || !activeProtoId.startsWith('custom_proto_')) return;
@@ -629,8 +652,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnInsertMeals) {
         btnInsertMeals.addEventListener('click', () => {
             const days = ['man', 'tir', 'ons', 'tor', 'fre'];
+            const mealBlocks = SETTINGS.mealBlocks || [];
             days.forEach(day => {
-                SETTINGS.mealBlocks.forEach(meal => {
+                mealBlocks.forEach(meal => {
                     const exists = currentSchedule.some(item => item.day === day && item.title === meal.title);
                     if (!exists) {
                         currentSchedule.push({
@@ -800,6 +824,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     }
 
-    // Start
     init();
-});
+}
+
+// Start appen robust
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startApp);
+} else {
+    startApp();
+}
