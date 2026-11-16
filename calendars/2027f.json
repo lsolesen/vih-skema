@@ -1,6 +1,177 @@
 {
   "id": "f2027",
-  "name": "Forår 2027 (Uge 1–26)",
+  "name": "Forår 2027 (Uge 1–25)",
+  "wishes": [
+    {
+      "id": "w_f_brand",
+      "title": "Brandøvelse",
+      "type": "buffer_or_event",
+      "start": "10:20",
+      "end": "11:50",
+      "preferredWeeks": [3]
+    },
+    {
+      "id": "w_f_p1_b1_blokdag",
+      "title": "Idræt 1 dag #1",
+      "type": "immersion",
+      "targetBlock": "Idræt 1",
+      "start": "08:00",
+      "end": "16:00",
+      "preferredWeeks": [4, 7]
+    },
+    {
+      "id": "w_f_p1_b2_blokdag",
+      "title": "Idræt 2 dag #1",
+      "type": "immersion",
+      "targetBlock": "Idræt 2",
+      "start": "08:00",
+      "end": "16:00",
+      "preferredWeeks": [6]
+    },
+    {
+      "id": "w_f_p2_b1_blokdag",
+      "title": "Idræt 1 dag #2",
+      "type": "immersion",
+      "targetBlock": "Idræt 1",
+      "start": "08:00",
+      "end": "16:00",
+      "preferredWeeks": [12]
+    },
+    {
+      "id": "w_f_p2_b2_blokdag",
+      "title": "Idræt 2 dag #2",
+      "type": "immersion",
+      "targetBlock": "Idræt 2",
+      "start": "08:00",
+      "end": "16:00",
+      "preferredWeeks": [11, 13]
+    },
+    {
+      "id": "w_f_udays",
+      "title": "U-Days & Fremtidsdag",
+      "type": "event",
+      "start": "08:00",
+      "end": "16:00",
+      "preferredWeeks": [8]
+    },
+    {
+      "id": "w_f_komp_dage",
+      "title": "Kompetencedag 1",
+      "type": "immersion",
+      "targetBlock": "Kompetencefag",
+      "start": "08:00",
+      "end": "16:00",
+      "preferredWeeks": [12]
+    },
+        {
+      "id": "w_f_komp_dage_2_1",
+      "title": "Kompetencedag 2/1",
+      "type": "immersion",
+      "targetBlock": "Kompetencefag",
+      "start": "08:00",
+      "end": "16:00",
+      "preferredWeeks": [23]
+    },
+        {
+      "id": "w_f_komp_dage_2_2",
+      "title": "Kompetencedag 2/2",
+      "type": "immersion",
+      "targetBlock": "Kompetencefag",
+      "start": "08:00",
+      "end": "16:00",
+      "preferredWeeks": [23]
+    },
+    {
+      "id": "w_f_vaerelsesbytte",
+      "title": "Værelsesbytte",
+      "type": "buffer_or_event",
+      "start": "10:20",
+      "end": "11:50",
+      "preferredWeeks": [13]
+    },
+    {
+      "id": "w_f_rengoering",
+      "title": "Fælles rengøringsdag",
+      "type": "event",
+      "start": "08:00",
+      "end": "12:00",
+      "preferredWeeks": [13, 14, 15, 16]
+    },
+    {
+      "id": "w_f_team_gruppe",
+      "title": "Teamsamtaler: Fællesskab",
+      "type": "buffer_or_event",
+      "start": "10:20",
+      "end": "11:50",
+      "preferredWeeks": [13]
+    },
+    {
+      "id": "w_f_familiedag",
+      "title": "Familiedag",
+      "type": "event",
+      "start": "13:00",
+      "end": "17:00",
+      "preferredWeeks": [17]
+    },
+    {
+      "id": "w_f_5kl_forb",
+      "title": "5. klasses dag (forberedelse)",
+      "type": "event",
+      "start": "08:00",
+      "end": "15:30",
+      "preferredWeeks": [18]
+    },
+    {
+      "id": "w_f_5kl_afvikl",
+      "title": "5. klasses dag (afvikling)",
+      "type": "event",
+      "start": "08:00",
+      "end": "15:30",
+      "preferredWeeks": [19]
+    },
+    {
+      "id": "w_f_b2_fordybelse",
+      "title": "Idræt 2 dag #3",
+      "type": "immersion",
+      "targetBlock": "Idræt 2",
+      "start": "08:00",
+      "end": "16:00",
+      "preferredWeeks": [21]
+    },
+    {
+      "id": "w_f_faglig_formiddag",
+      "title": "Faglig formiddag på tværs / PF",
+      "type": "event",
+      "start": "08:00",
+      "end": "12:00",
+      "preferredWeeks": [24]
+    },
+    {
+      "id": "w_f_b1_fordybelse",
+      "title": "Idræt 1 dag #3",
+      "type": "immersion",
+      "targetBlock": "Idræt 1",
+      "start": "08:00",
+      "end": "16:00",
+      "preferredWeeks": [25]
+    },
+    {
+      "id": "w_f_team_transition",
+      "title": "Teamsamtaler: Transition & Bygge Højskole",
+      "type": "buffer_or_event",
+      "start": "10:20",
+      "end": "11:50",
+      "preferredWeeks": [25]
+    },
+    {
+      "id": "w_f_msc_nak_aed",
+      "title": "Most Significant Change & Nak & Æd",
+      "type": "event",
+      "start": "08:00",
+      "end": "16:00",
+      "preferredWeeks": [26]
+    }
+  ],
   "weeks": [
     {
       "week": 1,
@@ -45,7 +216,7 @@
       "week": 8,
       "label": "Udays & Rejse",
       "changes": [
-        { "day": "tor", "start": "08:00", "end": "16:00", "type": "event", "title": "Udays" },
+        { "day": "tor", "start": "08:00", "end": "16:00", "type": "event", "title": "U-Days & Fremtidsdag" },
         { "day": "fre", "start": "08:00", "end": "17:00", "type": "event", "title": "Klar til rejse / event" }
       ]
     },
@@ -67,7 +238,7 @@
       "week": 11,
       "label": "Kompetencedage",
       "changes": [
-        { "day": "ons", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedage" }
+        { "day": "ons", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag 1" }
       ]
     },
     {
@@ -94,14 +265,14 @@
       "week": 15,
       "label": "Teamsamtaler",
       "changes": [
-        { "day": "tor", "start": "10:20", "end": "11:50", "type": "event", "title": "Teamsamtaler" }
+        { "day": "tor", "start": "10:20", "end": "11:50", "type": "event", "title": "Teamsamtaler: Fællesskab" }
       ]
     },
     {
       "week": 16,
       "label": "Rengøring, Familie & Restitution",
       "changes": [
-        { "day": "tir", "start": "08:00", "end": "12:00", "type": "event", "title": "Rengøringsdag" },
+        { "day": "tir", "start": "08:00", "end": "12:00", "type": "event", "title": "Fælles rengøringsdag" },
         { "day": "tor", "start": "13:00", "end": "17:00", "type": "event", "title": "Familiedag" },
         { "day": "fre", "start": "08:00", "end": "17:00", "type": "cancel", "title": "Restitutionsweekend" }
       ]
@@ -111,8 +282,8 @@
       "week": 18,
       "label": "5. klassesdag & Kristi Himmelfart",
       "changes": [
-        { "day": "man", "start": "08:00", "end": "16:00", "type": "event", "title": "5. klassesdag" },
-        { "day": "tir", "start": "08:00", "end": "16:00", "type": "event", "title": "5. klassesdag" },
+        { "day": "man", "start": "08:00", "end": "16:00", "type": "event", "title": "5. klasses dag (forberedelse)" },
+        { "day": "tir", "start": "08:00", "end": "16:00", "type": "event", "title": "5. klasses dag (afvikling)" },
         { "day": "tor", "start": "08:00", "end": "21:00", "type": "holiday", "title": "Kristi Himmelfart" },
         { "day": "fre", "start": "08:00", "end": "21:00", "type": "event", "title": "Genysnsweekend" }
       ]
@@ -127,9 +298,9 @@
     },
     {
       "week": 21,
-      "label": "Blokdag",
+      "label": "Idrætsdag",
       "changes": [
-        { "day": "tor", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Idræt 1", "title": "Blokdag (Idræt 1)" }
+        { "day": "tor", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Idræt 1", "title": "Idræt 1 dag #3" }
       ]
     },
     { "week": 22, "label": "Rejseuge", "changes": [
@@ -143,8 +314,8 @@
       "week": 23,
       "label": "Kompetencedage",
       "changes": [
-        { "day": "ons", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag 1" },
-        { "day": "tor", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag 2" }
+        { "day": "ons", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag 2/1" },
+        { "day": "tor", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag 2/2" }
       ]
     },
     {
