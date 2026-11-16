@@ -73,8 +73,9 @@
             <!-- FANE 1: UGESKEMA (BYGGER) -->
             <section id="tab-builder" class="tab-pane active">
                 <div id="export-target" class="export-container">
-                    <div class="schedule-title-row schedule-header-flex">
-                        <div>
+                    <div class="schedule-title-row">
+                        <!-- Række 1: Titel + Status + Skema-handlinger på én linje -->
+                        <div class="schedule-header-top">
                             <div class="title-with-status">
                                 <div class="editable-title-wrapper" title="Klik for at omdøbe">
                                     <h1 id="schedule-title-display">Skemaforslag</h1>
@@ -84,18 +85,29 @@
                                     <span class="status-dot">●</span>
                                     <span id="status-badge-text">Skabelon aktiv</span>
                                 </div>
+                                <span class="subtitle-inline">Man–fre · 07:00–21:30</span>
                             </div>
-                            <p class="subtitle">Mandag til fredag · Kl. 07:00 – 21:30 · 5 min snapping</p>
-                            <div id="builder-stats-bar" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.82rem;"></div>
+
+                            <div class="schedule-card-actions" id="schedule-card-actions">
+                                <button id="btn-save-proto" class="btn btn-outline btn-sm" title="Gem nuværende skema som nyt forslag">💾 Gem</button>
+                                <button id="btn-insert-meals" class="btn btn-outline btn-sm" title="Indsæt faste måltider">🥪 Måltider</button>
+                                <button id="btn-export-json" class="btn btn-outline btn-sm" title="Download skema som JSON-fil">📥 JSON</button>
+                                <button id="btn-clear-schedule" class="btn btn-subtle btn-sm" title="Ryd alle lektioner i skemaet">🗑️ Ryd</button>
+                                <button id="btn-export-image" class="btn btn-primary btn-sm">📸 Gem billede</button>
+                            </div>
                         </div>
 
-                        <!-- SKEMAETS EGNE HANDLINGER -->
-                        <div class="schedule-card-actions" id="schedule-card-actions">
-                            <button id="btn-save-proto" class="btn btn-outline" title="Gem nuværende skema som nyt forslag">💾 Gem</button>
-                            <button id="btn-insert-meals" class="btn btn-outline" title="Indsæt faste måltider">🥪 Måltider</button>
-                            <button id="btn-export-json" class="btn btn-outline" title="Download skema som JSON-fil">📥 JSON</button>
-                            <button id="btn-clear-schedule" class="btn btn-subtle" title="Ryd alle lektioner i skemaet">🗑️ Ryd</button>
-                            <button id="btn-export-image" class="btn btn-primary">📸 Gem billede</button>
+                        <!-- Række 2: Kompakt nøgletals- & begrænsningsbjælke -->
+                        <div class="schedule-metrics-strip">
+                            <div id="builder-stats-bar" class="builder-stats-inline"></div>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <label class="constraint-toggle-label" title="Vis efterskolens spisetider og spærrede haltider som svag baggrund i skemaet">
+                                    <input type="checkbox" id="toggle-constraints-overlay" checked> 👁️ Vis spærretider
+                                </label>
+                                <button type="button" id="btn-open-constraints" class="btn btn-outline btn-sm" title="Se og rediger lokalebegrænsninger, spisetider og ønskede faglængder">
+                                    ⚙️ Begrænsninger & fagønsker
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -172,7 +184,6 @@
                                 </div>
                                 <button type="button" id="btn-add-week-override" class="btn btn-outline" style="font-size: 0.78rem; padding: 0.4rem 0.7rem;" title="Tilføj en ændring/override i denne uge">+ Override</button>
                             </div>
-                            <div id="sim-week-changes-bar" class="sim-week-changes-bar"></div>
                             <div id="sim-week-detail" class="sim-timeline-grid"></div>
                         </div>
                     </div>
@@ -272,6 +283,50 @@
         </form>
     </dialog>
 
+    <!-- Modal: Begrænsninger, Lokaler & Faglængde-ønsker -->
+    <dialog id="constraints-modal" class="modal modal-wide">
+        <div class="modal-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.6rem;">
+                <div>
+                    <h3 style="border-bottom: none; padding-bottom: 0; margin: 0;">⚙️ Begrænsninger & fagønsker</h3>
+                    <p style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">Spisetider, efterskolens idrætslokaler og ønskede modullængder (gemmes automatisk i browseren)</p>
+                </div>
+                <button type="button" id="btn-close-constraints" style="background: none; border: none; font-size: 1.4rem; line-height: 1; color: var(--text-muted); cursor: pointer;">&times;</button>
+            </div>
+
+            <!-- Faner i modalen -->
+            <div class="modal-subtabs">
+                <button type="button" class="modal-subtab active" data-ctab="ctab-check">🔍 Tjek af <span id="ctab-proto-name">skema</span></button>
+                <button type="button" class="modal-subtab" data-ctab="ctab-rules">🏟️ Lokaler & spisetider</button>
+                <button type="button" class="modal-subtab" data-ctab="ctab-wishes">📐 Faglængder & ændringsønsker</button>
+            </div>
+
+            <!-- Subtab 1: Live tjek -->
+            <div id="ctab-check" class="modal-subpane active">
+                <div id="constraints-check-results" class="constraints-scroll-area"></div>
+            </div>
+
+            <!-- Subtab 2: Lokaler & spisetider -->
+            <div id="ctab-rules" class="modal-subpane" style="display: none;">
+                <div class="constraints-scroll-area" id="constraints-rules-editor"></div>
+            </div>
+
+            <!-- Subtab 3: Faglængder & ændringsønsker -->
+            <div id="ctab-wishes" class="modal-subpane" style="display: none;">
+                <div class="constraints-scroll-area" id="constraints-wishes-editor"></div>
+            </div>
+
+            <div class="modal-actions" style="border-top: 1px solid var(--border-color); padding-top: 0.75rem; flex-wrap: wrap; gap: 8px;">
+                <button type="button" id="btn-reset-constraints" class="btn btn-subtle btn-sm">↺ Nulstil til settings.js</button>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto;">
+                    <button type="button" id="btn-copy-constraints-settings" class="btn btn-outline btn-sm" title="Kopiér constraints-blokken klar til at indsætte i settings.js">📋 Kopiér til settings.js</button>
+                    <button type="button" id="btn-copy-constraints-prompt" class="btn btn-outline btn-sm" title="Kopiér ønske- og begrænsningsprofil inkl. nuværende skema til chatten">💬 Kopiér profil til chat</button>
+                    <button type="button" id="btn-done-constraints" class="btn btn-primary btn-sm">Luk</button>
+                </div>
+            </div>
+        </div>
+    </dialog>
+
     <!-- Modal: Opret nyt ønske til bruttolisten -->
     <dialog id="wish-modal" class="modal">
         <form method="dialog" id="wish-form" class="modal-card">
@@ -322,7 +377,6 @@
         </form>
     </dialog>
 
-    <!-- Modal: Tilføj uge-override -->
     <!-- Modal: Tilføj / rediger uge-override -->
     <dialog id="week-override-modal" class="modal">
         <form method="dialog" id="week-override-form" class="modal-card">

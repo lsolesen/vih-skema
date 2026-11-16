@@ -72,24 +72,6 @@
       "preferredWeeks": [33, 34]
     },
     {
-      "id": "w_e_b2_dag",
-      "title": "Idræt 2 dag #4",
-      "type": "immersion",
-      "targetBlock": "Idræt 2",
-      "start": "08:00",
-      "end": "16:00",
-      "preferredWeeks": [36]
-    },
-    {
-      "id": "w_e_b1_dag",
-      "title": "Idræt 1 dag #4",
-      "type": "immersion",
-      "targetBlock": "Idræt 1",
-      "start": "08:00",
-      "end": "16:00",
-      "preferredWeeks": [37]
-    },
-    {
       "id": "w_e_biatlon",
       "title": "Fællesdag: Biatlon (ifm. sensommerseminar)",
       "type": "event",
@@ -104,24 +86,6 @@
       "start": "08:00",
       "end": "12:00",
       "preferredWeeks": [40]
-    },
-    {
-      "id": "w_e_komp1",
-      "title": "Kompetencedag 1 (friluftstur)",
-      "type": "immersion",
-      "targetBlock": "Kompetencefag",
-      "start": "08:00",
-      "end": "16:00",
-      "preferredWeeks": [41]
-    },
-    {
-      "id": "w_e_komp2",
-      "title": "Kompetencedag 2 (formiddag)",
-      "type": "immersion",
-      "targetBlock": "Kompetencefag",
-      "start": "08:00",
-      "end": "12:00",
-      "preferredWeeks": [41]
     },
     {
       "id": "w_e_vaerelsesbytte",
@@ -140,16 +104,8 @@
       "preferredWeeks": [43]
     },
     {
-      "id": "w_e_cocuura",
-      "title": "Cocuura-arrangement",
-      "type": "buffer_or_event",
-      "start": "10:20",
-      "end": "11:50",
-      "preferredWeeks": [43]
-    },
-    {
       "id": "w_e_faglig_formiddag",
-      "title": "Faglig formiddag på tværs / PF",
+      "title": "PF-møde",
       "type": "event",
       "start": "08:00",
       "end": "12:00",
@@ -162,24 +118,6 @@
       "start": "10:20",
       "end": "11:50",
       "preferredWeeks": [48]
-    },
-    {
-      "id": "w_e_komp_fordybelse1",
-      "title": "Kompetencedag 2/1",
-      "type": "immersion",
-      "targetBlock": "Kompetencefag",
-      "start": "08:00",
-      "end": "16:00",
-      "preferredWeeks": [49]
-    },
-    {
-      "id": "w_e_komp_fordybelse2",
-      "title": "Kompetencedag 2/2",
-      "type": "immersion",
-      "targetBlock": "Kompetencefag",
-      "start": "08:00",
-      "end": "16:00",
-      "preferredWeeks": [49]
     },
     {
       "id": "w_e_msc_teamdag",
@@ -216,14 +154,14 @@
       "week": 35,
       "label": "Idrætsdag",
       "changes": [
-        { "day": "tor", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Idræt 1", "title": "Idræt 1 dag #3" }
+        { "day": "tor", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Idræt 1", "title": "Idræt 1 dag #4" }
       ]
     },
     {
       "week": 36,
       "label": "Blokdag 2 & Restitution",
       "changes": [
-        { "day": "tor", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Idræt 2", "title": "Idræt 2 dag #3" },
+        { "day": "tor", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Idræt 2", "title": "Idræt 2 dag #4" },
         { "day": "fre", "start": "08:00", "end": "17:00", "type": "cancel", "title": "Fredag væk – Restitution" }
       ]
     },
@@ -258,7 +196,7 @@
       "week": 40,
       "label": "Familiedag & Restitution",
       "changes": [
-        { "day": "tir", "start": "08:00", "end": "12:00", "type": "event", "title": "Fælles rengøring" },
+        { "day": "tir", "start": "08:00", "end": "12:00", "type": "event", "title": "Fælles rengøringsdag" },
         { "day": "tor", "start": "13:00", "end": "17:00", "type": "event", "title": "Familiedag" },
         { "day": "fre", "start": "08:00", "end": "17:00", "type": "cancel", "title": "Fredag væk – Restitution" }
       ]

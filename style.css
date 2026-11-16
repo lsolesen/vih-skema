@@ -1456,3 +1456,255 @@ body {
     color: #991b1b;
     border: 1px dashed #f87171;
 }
+
+/* =========================================================
+   KOMPAKT SKEMATOP, KONFLIKT-BADGES & BEGRÆNSNINGSMODAL
+   ========================================================= */
+.sim-mini-block.is-cancel {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px dashed #f87171;
+}
+
+.schedule-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.subtitle-inline {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.btn-sm {
+    padding: 0.34rem 0.65rem;
+    font-size: 0.78rem;
+}
+
+.schedule-metrics-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 0.65rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.builder-stats-inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.metric-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border: 1px solid var(--border-color);
+    background: #f8fafc;
+    color: #334155;
+}
+
+.metric-pill.is-ok {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
+}
+
+.metric-pill.is-warn {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #92400e;
+}
+
+.metric-pill.is-err {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+.metric-pill.is-clickable {
+    cursor: pointer;
+    transition: filter 0.12s ease;
+}
+
+.metric-pill.is-clickable:hover {
+    filter: brightness(0.96);
+}
+
+/* Konflikt-markering på selve skemabrikken */
+.schedule-block.has-constraint-error {
+    outline: 2px solid #dc2626;
+    outline-offset: -2px;
+}
+
+.schedule-block.has-constraint-warn {
+    outline: 2px dashed #d97706;
+    outline-offset: -2px;
+}
+
+/* Bred modal til begrænsninger & fagønsker */
+.modal.modal-wide {
+    max-width: 780px;
+}
+
+.modal-subtabs {
+    display: flex;
+    gap: 4px;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 8px;
+}
+
+.modal-subtab {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 0.42rem 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #475569;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.modal-subtab.active {
+    background: #ffffff;
+    color: var(--vih-red);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.constraints-scroll-area {
+    max-height: 55vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 2px;
+}
+
+.constraint-item-card {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.65rem 0.8rem;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.constraint-days-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.day-chip-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* =========================================================
+   BAGGRUNDSVISNING AF BEGRÆNSNINGER PÅ UGESKEMAET
+   ========================================================= */
+.constraint-toggle-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #475569;
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    padding: 0.32rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.constraint-toggle-label:hover {
+    background: #f1f5f9;
+}
+
+.constraint-toggle-label:has(input:checked) {
+    background: #fffbeb;
+    border-color: #fcd34d;
+    color: #92400e;
+}
+
+.constraint-bg-zone {
+    position: absolute;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    z-index: 1;
+    box-sizing: border-box;
+    padding: 2px 5px;
+    display: flex;
+    justify-content: flex-end;
+    overflow: hidden;
+}
+
+.constraint-bg-zone.is-meal-window {
+    background: repeating-linear-gradient(
+        -45deg,
+        rgba(244, 63, 94, 0.05),
+        rgba(244, 63, 94, 0.05) 6px,
+        rgba(244, 63, 94, 0.11) 6px,
+        rgba(244, 63, 94, 0.11) 12px
+    );
+    border-top: 1px dashed rgba(225, 29, 72, 0.35);
+    border-bottom: 1px dashed rgba(225, 29, 72, 0.35);
+    align-items: flex-start;
+}
+
+.constraint-bg-zone.is-facility-window {
+    background: repeating-linear-gradient(
+        -45deg,
+        rgba(245, 158, 11, 0.06),
+        rgba(245, 158, 11, 0.06) 6px,
+        rgba(245, 158, 11, 0.13) 6px,
+        rgba(245, 158, 11, 0.13) 12px
+    );
+    border-top: 1px dashed rgba(217, 119, 6, 0.38);
+    border-bottom: 1px dashed rgba(217, 119, 6, 0.38);
+    align-items: flex-end;
+}
+
+.constraint-bg-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    opacity: 0.72;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.constraint-bg-zone.is-meal-window .constraint-bg-label {
+    color: #9f1239;
+}
+
+.constraint-bg-zone.is-facility-window .constraint-bg-label {
+    color: #92400e;
+}

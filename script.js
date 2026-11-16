@@ -1,51 +1,36 @@
-import * as settingsModule from './settings.js';
 import { allPrototypes } from './prototypes.js';
-
-const SETTINGS = settingsModule.VIH_SKEMA_SETTINGS || settingsModule.VIH_SETTINGS || {};
-const STORAGE_KEY_CURRENT = 'vih_active_schedule_data';
-const STORAGE_KEY_CUSTOM_BLOCKS = 'vih_custom_schedule_blocks';
-const STORAGE_KEY_CUSTOM_PROTOS = 'vih_custom_schedule_protos';
-const STORAGE_KEY_WISH_PLACEMENTS = 'vih_calendar_wish_placements';
-const STORAGE_KEY_CUSTOM_WISHES = 'vih_calendar_custom_wishes';
-const STORAGE_KEY_WEEK_OVERRIDES = 'vih_calendar_week_overrides';
-const STORAGE_KEY_SIDEBAR_SECTIONS = 'vih_sidebar_sections_state';
-
-const MEAL_TITLES = ['Morgenmad', 'Frokost', 'Aftensmad', 'Aftenforfriskning', 'Formiddagskaffe', 'Eftermiddagskaffe'];
-const DEFAULT_TEACHING_TITLES = [
-    'Idræt 1', 'Idræt 2', 'Idræt 1/2', 'Kompetencefag', 'Inspirationsfag',
-    'DGL', 'Morgensamling', 'Fællessang', 'Connected', 'Højskoleaften'
-];
-const DAY_LABELS = { man: 'Mandag', tir: 'Tirsdag', ons: 'Onsdag', tor: 'Torsdag', fre: 'Fredag' };
-const DAY_SHORT = { man: 'Man', tir: 'Tir', ons: 'Ons', tor: 'Tor', fre: 'Fre' };
-
-// Vite scanner automatisk ./calendars/*.json
-const calendarModules = import.meta.glob('./calendars/*.json', { eager: true });
-const scannedCalendars = Object.entries(calendarModules)
-    .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
-    .map(([path, mod]) => {
-        const data = JSON.parse(JSON.stringify(mod.default || mod));
-        const fileName = path.split('/').pop().replace(/\.json$/i, '');
-        if (!data.id) data.id = fileName;
-        if (!data.name) data.name = fileName;
-        return data;
-    });
-
-// State
-let currentSchedule = [];
-let currentNotes = "";
-let customBlocks = [];
-let customPrototypes = [];
-let wishPlacementsByCal = {};
-let customWishesByCal = {};
-let weekOverridesByCal = {};
-let sidebarSectionsState = { paletteOpen: true, wishesOpen: true };
-let activeProtoId = null;
-let currentTitle = "Skemaforslag";
-let isModified = false;
-let editingEntryId = null;
-let editingOverrideContext = null;
-let activeTab = 'tab-builder';
-let selectedSimWeekIndex = 0;
+import {
+    SETTINGS,
+    state,
+    saveCurrentState,
+    saveCustomPrototypes,
+    saveSidebarSectionsState,
+    saveShowConstraintsOverlay,
+    loadFromStorage
+} from './state.js';
+import {
+    DAY_KEYS,
+    timeToMinutes,
+    minutesToTime,
+    resolveTimeWindowForDay,
+    resolveMealForDay,
+    isEntryTeaching,
+    isBlockTitleTeaching,
+    getBlockColors,
+    evaluateScheduleConstraints,
+    downloadJsonFile
+} from './utils.js';
+import {
+    getActiveCalendar,
+    renderSemesterSimulation,
+    applySimulatorUrlParams,
+    initSimulator
+} from './simulator.js';
+import {
+    initModals,
+    openEditModal,
+    openConstraintsModal
+} from './modals.js';
 
 function startApp() {
     // Sidebar & Accordion DOM
@@ -56,10 +41,8 @@ function startApp() {
     const sectionWishes = document.getElementById('section-wishes');
     const toggleWishesBtn = document.getElementById('toggle-wishes-section');
     const wishesBody = document.getElementById('wishes-section-body');
-    const wishesCounterBadge = document.getElementById('wishes-counter-badge');
-    const btnNewWish = document.getElementById('btn-new-wish');
 
-    // Øvrige DOM referencer
+    // Topbar & Builder DOM
     const paletteEl = document.getElementById('unified-palette') || document.getElementById('block-palette');
     const timeAxisEl = document.getElementById('time-axis');
     const protoSelect = document.getElementById('prototype-select');
@@ -73,97 +56,18 @@ function startApp() {
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabPanes = document.querySelectorAll('.tab-pane');
 
-    // Rediger brik modal
-    const editModal = document.getElementById('edit-modal');
-    const editForm = document.getElementById('edit-form');
-    const editTitle = document.getElementById('edit-title');
-    const editStart = document.getElementById('edit-start');
-    const editEnd = document.getElementById('edit-end');
-    const editNote = document.getElementById('edit-note');
-    const editColor = document.getElementById('edit-color');
-    const editUseOverride = document.getElementById('edit-use-override');
-    const editIsTeaching = document.getElementById('edit-is-teaching');
-    const btnDeleteEntry = document.getElementById('btn-delete-entry');
-
-    // Opret ny brik modal
-    const customModal = document.getElementById('custom-block-modal');
-    const customTitle = document.getElementById('custom-title');
-    const customColor = document.getElementById('custom-color');
-    const customDuration = document.getElementById('custom-duration');
-    const customIsTeaching = document.getElementById('custom-is-teaching');
-
-    // Wish modal
-    const wishModal = document.getElementById('wish-modal');
-    const wishForm = document.getElementById('wish-form');
-    const wishTitleInput = document.getElementById('wish-title');
-    const wishTypeSelect = document.getElementById('wish-type');
-    const wishTargetBlockGroup = document.getElementById('wish-target-block-group');
-    const wishTargetBlockSelect = document.getElementById('wish-target-block');
-    const wishStartInput = document.getElementById('wish-start');
-    const wishEndInput = document.getElementById('wish-end');
-    const wishPrefWeeksInput = document.getElementById('wish-preferred-weeks');
-
-    // Week override modal
-    const overrideModal = document.getElementById('week-override-modal');
-    const overrideModalTitle = document.getElementById('override-modal-title');
-    const overrideForm = document.getElementById('week-override-form');
-    const overrideWeekSelect = document.getElementById('override-week');
-    const overrideDaySelect = document.getElementById('override-day');
-    const overrideTypeSelect = document.getElementById('override-type');
-    const overrideTargetBlockGroup = document.getElementById('override-target-block-group');
-    const overrideTargetBlockSelect = document.getElementById('override-target-block');
-    const overrideTitleInput = document.getElementById('override-title');
-    const overrideStartInput = document.getElementById('override-start');
-    const overrideEndInput = document.getElementById('override-end');
-    const btnDeleteOverride = document.getElementById('btn-delete-override');
-
-    // Skema-handlinger
     const btnDeleteProto = document.getElementById('btn-delete-proto');
     const btnSaveProto = document.getElementById('btn-save-proto');
     const btnInsertMeals = document.getElementById('btn-insert-meals');
     const btnClearSchedule = document.getElementById('btn-clear-schedule');
-    const btnNewBlock = document.getElementById('btn-new-block');
     const btnExportJson = document.getElementById('btn-export-json');
     const btnExportImage = document.getElementById('btn-export-image');
     const scheduleCardActions = document.getElementById('schedule-card-actions');
+    const btnOpenConstraints = document.getElementById('btn-open-constraints');
+    const toggleConstraintsOverlay = document.getElementById('toggle-constraints-overlay');
 
-    // Simulator DOM
-    const semesterSelect = document.getElementById('semester-select');
-    const simUseBuffer = document.getElementById('sim-use-buffer');
-    const simProtoName = document.getElementById('sim-proto-name');
-    const simKpiRow = document.getElementById('sim-kpi-row');
-    const simWishesContainer = document.getElementById('sim-wishes-container');
-    const btnResetWishes = document.getElementById('btn-reset-wishes');
-    const btnResetCalendarOverrides = document.getElementById('btn-reset-calendar-overrides');
-    const btnExportCalendarJson = document.getElementById('btn-export-calendar-json');
-    const semesterStatsContainer = document.getElementById('semester-stats-container');
-    const semesterTableContainer = document.getElementById('semester-table-container');
-    const simWeekSelect = document.getElementById('sim-week-select');
-    const btnPrevWeek = document.getElementById('btn-prev-week');
-    const btnNextWeek = document.getElementById('btn-next-week');
-    const btnAddWeekOverride = document.getElementById('btn-add-week-override');
-    const simWeekDetail = document.getElementById('sim-week-detail');
-    const btnExportSimImage = document.getElementById('btn-export-sim-image');
 
-    // --- OPT-IN UNDERVISNINGSHJÆLPER ---
-    function isEntryTeaching(entry) {
-        if (!entry) return false;
-        if (typeof entry.isTeaching === 'boolean') return entry.isTeaching;
-        const allBlocks = [
-            ...(SETTINGS.defaultBlocks || []),
-            ...customBlocks,
-            ...(SETTINGS.mealBlocks || [])
-        ];
-        const blockDef = allBlocks.find(b => b.title === entry.title);
-        if (blockDef && typeof blockDef.isTeaching === 'boolean') return blockDef.isTeaching;
-        return DEFAULT_TEACHING_TITLES.includes(entry.title);
-    }
-
-    function isBlockTitleTeaching(title) {
-        return isEntryTeaching({ title });
-    }
-
-    // --- SIDEBAR ACCORDION HJÆLPERE ---
+    // --- SIDEBAR ACCORDION ---
     function setSectionOpen(sectionEl, headerEl, bodyEl, isOpen) {
         if (!sectionEl || !bodyEl) return;
         sectionEl.classList.toggle('is-collapsed', !isOpen);
@@ -171,15 +75,11 @@ function startApp() {
         if (headerEl) headerEl.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     }
 
-    function saveSidebarSectionsState() {
-        localStorage.setItem(STORAGE_KEY_SIDEBAR_SECTIONS, JSON.stringify(sidebarSectionsState));
-    }
-
     if (togglePaletteBtn && sectionPalette && paletteBody) {
         const handleTogglePalette = (e) => {
             if (e.target.closest('#btn-new-block')) return;
-            sidebarSectionsState.paletteOpen = !sidebarSectionsState.paletteOpen;
-            setSectionOpen(sectionPalette, togglePaletteBtn, paletteBody, sidebarSectionsState.paletteOpen);
+            state.sidebarSectionsState.paletteOpen = !state.sidebarSectionsState.paletteOpen;
+            setSectionOpen(sectionPalette, togglePaletteBtn, paletteBody, state.sidebarSectionsState.paletteOpen);
             saveSidebarSectionsState();
         };
         togglePaletteBtn.addEventListener('click', handleTogglePalette);
@@ -194,8 +94,8 @@ function startApp() {
     if (toggleWishesBtn && sectionWishes && wishesBody) {
         const handleToggleWishes = (e) => {
             if (e.target.closest('#btn-reset-wishes') || e.target.closest('#btn-new-wish')) return;
-            sidebarSectionsState.wishesOpen = !sidebarSectionsState.wishesOpen;
-            setSectionOpen(sectionWishes, toggleWishesBtn, wishesBody, sidebarSectionsState.wishesOpen);
+            state.sidebarSectionsState.wishesOpen = !state.sidebarSectionsState.wishesOpen;
+            setSectionOpen(sectionWishes, toggleWishesBtn, wishesBody, state.sidebarSectionsState.wishesOpen);
             saveSidebarSectionsState();
         };
         toggleWishesBtn.addEventListener('click', handleToggleWishes);
@@ -207,14 +107,14 @@ function startApp() {
         });
     }
 
-    // --- URL- & KNAP-HJÆLPERE ---
+    // --- URL & FANESKIFT ---
     function updateActionButtonsVisibility() {
-        const isCustom = Boolean(activeProtoId && activeProtoId.startsWith('custom_proto_'));
+        const isCustom = Boolean(state.activeProtoId && state.activeProtoId.startsWith('custom_proto_'));
         const isOfficial = Boolean(
-            activeProtoId &&
+            state.activeProtoId &&
             !isCustom &&
             SETTINGS.prototypes &&
-            SETTINGS.prototypes.some(p => p.id === activeProtoId)
+            SETTINGS.prototypes.some(p => p.id === state.activeProtoId)
         );
         if (btnDeleteProto) btnDeleteProto.style.display = isCustom ? 'inline-block' : 'none';
         if (btnCopyLink) btnCopyLink.style.display = isOfficial ? 'inline-block' : 'none';
@@ -227,7 +127,7 @@ function startApp() {
             (p.id && p.id.toLowerCase() === q) ||
             (p._fileName && p._fileName.toLowerCase() === q) ||
             (p.name && p.name.toLowerCase() === q)
-        ) || customPrototypes.find(p =>
+        ) || state.customPrototypes.find(p =>
             (p.id && p.id.toLowerCase() === q) ||
             (p.name && p.name.toLowerCase() === q)
         ) || null;
@@ -235,21 +135,22 @@ function startApp() {
 
     function syncUrlState() {
         const url = new URL(window.location.href);
-        if (activeProtoId && !activeProtoId.startsWith('custom_proto_')) {
-            url.searchParams.set('skema', activeProtoId);
+        if (state.activeProtoId && !state.activeProtoId.startsWith('custom_proto_')) {
+            url.searchParams.set('skema', state.activeProtoId);
         } else {
             url.searchParams.delete('skema');
             url.searchParams.delete('proto');
         }
 
-        if (activeTab === 'tab-semester') {
+        if (state.activeTab === 'tab-semester') {
             url.searchParams.set('tab', 'semester');
-            if (semesterSelect && semesterSelect.value) {
-                url.searchParams.set('semester', semesterSelect.value);
+            const semSelect = document.getElementById('semester-select');
+            if (semSelect && semSelect.value) {
+                url.searchParams.set('semester', semSelect.value);
             }
             const cal = getActiveCalendar();
-            if (cal && cal.weeks && cal.weeks[selectedSimWeekIndex]) {
-                url.searchParams.set('uge', cal.weeks[selectedSimWeekIndex].week);
+            if (cal && cal.weeks && cal.weeks[state.selectedSimWeekIndex]) {
+                url.searchParams.set('uge', cal.weeks[state.selectedSimWeekIndex].week);
             }
         } else {
             url.searchParams.delete('tab');
@@ -259,9 +160,8 @@ function startApp() {
         window.history.replaceState({}, '', url);
     }
 
-    // --- FANESKIFT ---
     function switchTab(targetTab) {
-        activeTab = targetTab;
+        state.activeTab = targetTab;
         tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === targetTab));
         tabPanes.forEach(p => p.style.display = p.id === targetTab ? 'block' : 'none');
         syncUrlState();
@@ -270,59 +170,7 @@ function startApp() {
 
     tabBtns.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 
-    // --- 1. INITIALISERING ---
-    function init() {
-        loadFromStorage();
-
-        setSectionOpen(sectionPalette, togglePaletteBtn, paletteBody, sidebarSectionsState.paletteOpen);
-        setSectionOpen(sectionWishes, toggleWishesBtn, wishesBody, sidebarSectionsState.wishesOpen);
-
-        buildTimeAxis();
-        populateSemesterDropdown();
-
-        SETTINGS.prototypes = allPrototypes;
-        updateProtoDropdown();
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const linkedQuery = urlParams.get('skema') || urlParams.get('proto');
-        const linkedProto = findPrototypeByQuery(linkedQuery);
-
-        const validProto = linkedProto ||
-                           SETTINGS.prototypes.find(p => p.id === activeProtoId) ||
-                           customPrototypes.find(p => p.id === activeProtoId);
-
-        if (validProto) {
-            loadPrototype(validProto.id, false);
-        } else if (SETTINGS.prototypes.length > 0) {
-            loadPrototype(SETTINGS.prototypes[0].id, false);
-        } else {
-            updateActionButtonsVisibility();
-            renderSchedule();
-        }
-
-        const reqSem = urlParams.get('semester');
-        if (reqSem && semesterSelect && Array.from(semesterSelect.options).some(o => o.value === reqSem)) {
-            semesterSelect.value = reqSem;
-        }
-
-        const reqWeek = parseInt(urlParams.get('uge'), 10);
-        const cal = getActiveCalendar();
-        if (cal && !isNaN(reqWeek)) {
-            const wIdx = cal.weeks.findIndex(w => w.week === reqWeek);
-            if (wIdx !== -1) selectedSimWeekIndex = wIdx;
-        }
-
-        const reqTab = urlParams.get('tab');
-        if (reqTab === 'semester') {
-            switchTab('tab-semester');
-        } else {
-            switchTab('tab-builder');
-        }
-
-        renderPaletteAndStats();
-        setupDragAndDrop();
-    }
-
+    // --- TIDSLINJE & STATUS ---
     function buildTimeAxis() {
         if (!timeAxisEl) return;
         timeAxisEl.innerHTML = '';
@@ -356,48 +204,33 @@ function startApp() {
     }
 
     function setModifiedState(modified) {
-        isModified = modified;
+        state.isModified = modified;
         if (statusBadge && statusBadgeText) {
-            if (isModified) {
+            if (state.isModified) {
                 statusBadge.className = 'status-badge status-modified';
-                statusBadgeText.textContent = '✏️ Kladde (ugemt ændring)';
+                statusBadgeText.textContent = '✏️ Kladde';
             } else {
                 statusBadge.className = 'status-badge status-saved';
-                statusBadgeText.textContent = '★ Skabelon aktiv';
+                statusBadgeText.textContent = '★ Skabelon';
             }
         }
         updateActionButtonsVisibility();
         renderSemesterSimulation();
     }
 
-    // --- 2. FARVELOGIK ---
-    function getBlockColors(entry) {
-        if (entry.colorOverride && entry.overrideColor) {
-            return { color: entry.overrideColor, textColor: entry.overrideTextColor || '#ffffff' };
-        }
-        const defaultBlocks = SETTINGS.defaultBlocks || [];
-        const mealBlocks = SETTINGS.mealBlocks || [];
-        const allBlocks = [...defaultBlocks, ...customBlocks, ...mealBlocks];
-        const paletteMatch = allBlocks.find(b => b.title === entry.title);
-        if (paletteMatch) {
-            return { color: paletteMatch.color, textColor: paletteMatch.textColor || '#ffffff' };
-        }
-        return { color: entry.color || '#cbd5e1', textColor: entry.textColor || '#0f172a' };
-    }
-
-    // --- 3. PALETTE & STATISTIK PÅ SKEMABYGGEREN ---
+    // --- PALETTE & NØGLETAL ---
     function renderPaletteAndStats() {
         const counts = {};
         let totalTeachingMin = 0;
         let totalNonTeachingMin = 0;
 
-        currentSchedule.forEach(entry => {
+        state.currentSchedule.forEach(entry => {
             const dur = Math.max(timeToMinutes(entry.end) - timeToMinutes(entry.start), 0);
             if (!counts[entry.title]) counts[entry.title] = { count: 0, totalMin: 0 };
             counts[entry.title].count += 1;
             counts[entry.title].totalMin += dur;
 
-            if (isEntryTeaching(entry)) {
+            if (isEntryTeaching(entry, SETTINGS, state.customBlocks)) {
                 totalTeachingMin += dur;
             } else {
                 totalNonTeachingMin += dur;
@@ -406,7 +239,7 @@ function startApp() {
 
         if (paletteEl) {
             paletteEl.innerHTML = '';
-            const allBlocks = [...(SETTINGS.defaultBlocks || []), ...customBlocks];
+            const allBlocks = [...(SETTINGS.defaultBlocks || []), ...state.customBlocks];
 
             allBlocks.forEach(b => {
                 const stat = counts[b.title] || { count: 0, totalMin: 0 };
@@ -417,7 +250,9 @@ function startApp() {
                 const card = document.createElement('div');
                 card.className = 'palette-card';
                 card.draggable = true;
-                card.title = isBlockTitleTeaching(b.title) ? 'Tæller med som undervisning' : 'Rammer / ikke-undervisning';
+                card.title = isBlockTitleTeaching(b.title, SETTINGS, state.customBlocks)
+                    ? 'Tæller med som undervisning'
+                    : 'Rammer / ikke-undervisning';
 
                 card.innerHTML = `
                     <div class="palette-card-left" style="display: flex; align-items: center; gap: 8px; min-width: 0;">
@@ -436,7 +271,7 @@ function startApp() {
                         color: b.color,
                         textColor: b.textColor || '#ffffff',
                         defaultDuration: b.defaultDuration || 90,
-                        isTeaching: isBlockTitleTeaching(b.title)
+                        isTeaching: isBlockTitleTeaching(b.title, SETTINGS, state.customBlocks)
                     }));
                 });
 
@@ -448,22 +283,39 @@ function startApp() {
             const teachingHours = (totalTeachingMin / 60).toFixed(1);
             const nonTeachingHours = (totalNonTeachingMin / 60).toFixed(1);
             const meetsRequirement = parseFloat(teachingHours) >= 21;
+            const evalRes = evaluateScheduleConstraints(
+                state.currentSchedule,
+                state.activeConstraints,
+                SETTINGS,
+                state.customBlocks
+            );
+
+            let checkPillHtml = '';
+            if (evalRes.errors.length > 0) {
+                checkPillHtml = `<button type="button" id="pill-open-check" class="metric-pill is-err is-clickable" title="Klik for at se konflikter">🚫 ${evalRes.errors.length} konflikt${evalRes.errors.length > 1 ? 'er' : ''}</button>`;
+            } else if (evalRes.warnings.length > 0) {
+                checkPillHtml = `<button type="button" id="pill-open-check" class="metric-pill is-warn is-clickable" title="Klik for at se afvigelser fra fagønsker">⚠️ ${evalRes.warnings.length} afvigelse${evalRes.warnings.length > 1 ? 'r' : ''}</button>`;
+            } else {
+                checkPillHtml = `<button type="button" id="pill-open-check" class="metric-pill is-ok is-clickable" title="Overholder alle regler">✅ 0 konflikter</button>`;
+            }
 
             builderStatsBar.innerHTML = `
-                <div style="background: ${meetsRequirement ? '#f0fdf4' : '#fef2f2'}; border: 1px solid ${meetsRequirement ? '#bbf7d0' : '#fecaca'}; color: ${meetsRequirement ? '#166534' : '#991b1b'}; padding: 4px 10px; border-radius: 6px; font-weight: 700;">
-                    🎓 Reel undervisning: ${teachingHours} timer <small style="font-weight:normal;">· Lovkrav min. 21 klokketimer</small>
-                </div>
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; color: #475569; padding: 4px 10px; border-radius: 6px; font-weight: 600;">
-                    🧹 Rammer & møder: ${nonTeachingHours} timer
-                </div>
+                <span class="metric-pill ${meetsRequirement ? 'is-ok' : 'is-err'}">
+                    🎓 Undervisning: ${teachingHours}t <small style="font-weight:500; opacity:0.85;">(min. 21t)</small>
+                </span>
+                <span class="metric-pill">
+                    🧹 Rammer & møder: ${nonTeachingHours}t
+                </span>
+                ${checkPillHtml}
             `;
+
+            document.getElementById('pill-open-check')?.addEventListener('click', () => openConstraintsModal('ctab-check'));
         }
     }
 
-    // --- 4. DRAG FRA PALETTE TIL SKEMA ---
+    // --- DRAG & DROP + RENDER UGESKEMA ---
     function setupDragAndDrop() {
-        const dayBodies = document.querySelectorAll('.day-body');
-        dayBodies.forEach(col => {
+        document.querySelectorAll('.day-body').forEach(col => {
             col.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 col.style.backgroundColor = 'rgba(56, 189, 248, 0.08)';
@@ -490,7 +342,7 @@ function startApp() {
                 const startStr = minutesToTime(roundedMinutes);
                 const endStr = minutesToTime(roundedMinutes + blockData.defaultDuration);
 
-                currentSchedule.push({
+                state.currentSchedule.push({
                     id: 'entry_' + Date.now(),
                     day: dayKey,
                     title: blockData.title,
@@ -505,23 +357,64 @@ function startApp() {
                 });
 
                 setModifiedState(true);
-                saveState();
+                saveCurrentState(notesTextarea?.value || '');
                 renderSchedule();
             });
         });
     }
 
-    // --- 5. RENDER SKEMA PÅ TIDSLINJEN ---
-    function renderSchedule() {
-        ['man', 'tir', 'ons', 'tor', 'fre'].forEach(d => {
-            const body = document.getElementById(`day-${d}`);
-            if (body) body.innerHTML = '';
+    function renderConstraintOverlays(dayBody, dayKey, timelineStartMinutes, pixelPerHour) {
+        if (!state.showConstraintsOverlay) return;
+        const timelineEndMinutes = (SETTINGS.timeline?.endHour || 22) * 60;
+
+        const appendZone = (win, cssClass, icon, extraText = '') => {
+            const resolved = resolveTimeWindowForDay(win, dayKey);
+            if (!resolved) return;
+
+            const sMin = Math.max(timeToMinutes(resolved.start), timelineStartMinutes);
+            const eMin = Math.min(timeToMinutes(resolved.end), timelineEndMinutes);
+            if (eMin <= sMin) return;
+
+            const zone = document.createElement('div');
+            zone.className = `constraint-bg-zone ${cssClass}`;
+            zone.style.top = `${((sMin - timelineStartMinutes) / 60) * pixelPerHour}px`;
+            zone.style.height = `${((eMin - sMin) / 60) * pixelPerHour}px`;
+            zone.innerHTML = `<span class="constraint-bg-label">${icon} ${win.label}${extraText} (${resolved.start}–${resolved.end})</span>`;
+            dayBody.appendChild(zone);
+        };
+
+        (state.activeConstraints.blockedWindows || []).forEach(win => {
+            appendZone(win, 'is-meal-window', '🍽️');
         });
 
+        (state.activeConstraints.facilityRestrictions || []).forEach(fac => {
+            const appliesHint = Array.isArray(fac.appliesTo) && fac.appliesTo.length > 0
+                ? ` [${fac.appliesTo.join(', ')}]`
+                : '';
+            appendZone(fac, 'is-facility-window', '🏟️', appliesHint);
+        });
+    }
+
+    function renderSchedule() {
         const { startHour, pixelPerHour } = SETTINGS.timeline || { startHour: 7, pixelPerHour: 48 };
         const timelineStartMinutes = startHour * 60;
 
-        currentSchedule.forEach(entry => {
+        DAY_KEYS.forEach(d => {
+            const body = document.getElementById(`day-${d}`);
+            if (body) {
+                body.innerHTML = '';
+                renderConstraintOverlays(body, d, timelineStartMinutes, pixelPerHour);
+            }
+        });
+
+        const evalRes = evaluateScheduleConstraints(
+            state.currentSchedule,
+            state.activeConstraints,
+            SETTINGS,
+            state.customBlocks
+        );
+
+        state.currentSchedule.forEach(entry => {
             const dayBody = document.getElementById(`day-${entry.day}`);
             if (!dayBody) return;
 
@@ -531,19 +424,26 @@ function startApp() {
 
             const topPx = ((startMin - timelineStartMinutes) / 60) * pixelPerHour;
             const heightPx = (duration / 60) * pixelPerHour;
-            const { color, textColor } = getBlockColors(entry);
+            const { color, textColor } = getBlockColors(entry, SETTINGS, state.customBlocks);
+            const issue = evalRes.entryIssues[entry.id];
 
             const blockEl = document.createElement('div');
             blockEl.className = 'schedule-block';
+            if (issue) {
+                blockEl.classList.add(issue.severity === 'error' ? 'has-constraint-error' : 'has-constraint-warn');
+                blockEl.title = issue.messages.join(' · ');
+            }
             blockEl.dataset.entryId = entry.id;
             blockEl.style.top = `${topPx}px`;
             blockEl.style.height = `${heightPx}px`;
             blockEl.style.backgroundColor = color;
             blockEl.style.color = textColor;
 
+            const warnIcon = issue ? (issue.severity === 'error' ? '🚫 ' : '⚠️ ') : '';
+
             blockEl.innerHTML = `
                 <div class="block-header-line">
-                    <span class="block-title">${entry.title}</span>
+                    <span class="block-title">${warnIcon}${entry.title}</span>
                     <button type="button" class="block-close-btn" title="Fjern lektion">&times;</button>
                 </div>
                 <span class="block-time">${entry.start} - ${entry.end}</span>
@@ -553,9 +453,9 @@ function startApp() {
 
             blockEl.querySelector('.block-close-btn').addEventListener('click', (e) => {
                 e.stopPropagation();
-                currentSchedule = currentSchedule.filter(item => item.id !== entry.id);
+                state.currentSchedule = state.currentSchedule.filter(item => item.id !== entry.id);
                 setModifiedState(true);
-                saveState();
+                saveCurrentState(notesTextarea?.value || '');
                 renderSchedule();
             });
 
@@ -566,7 +466,6 @@ function startApp() {
         renderPaletteAndStats();
     }
 
-    // --- 6. FLYT BRIKKER & FORLÆNG/FORKORT ---
     function attachDragAndResize(blockEl, entry) {
         const resizeHandle = blockEl.querySelector('.block-resize-handle');
         const timeDisplay = blockEl.querySelector('.block-time');
@@ -604,7 +503,7 @@ function startApp() {
                 if (latestEndMin !== initialEndMin) {
                     entry.end = minutesToTime(latestEndMin);
                     setModifiedState(true);
-                    saveState();
+                    saveCurrentState(notesTextarea?.value || '');
                     renderSchedule();
                 }
             }
@@ -627,13 +526,9 @@ function startApp() {
             let latestEndMin = initialEndMin;
             let currentTargetDay = entry.day;
 
-            const dayColumns = ['man', 'tir', 'ons', 'tor', 'fre'].map(d => {
+            const dayColumns = DAY_KEYS.map(d => {
                 const bodyEl = document.getElementById(`day-${d}`);
-                return {
-                    day: d,
-                    body: bodyEl,
-                    rect: bodyEl ? bodyEl.getBoundingClientRect() : null
-                };
+                return { day: d, body: bodyEl, rect: bodyEl ? bodyEl.getBoundingClientRect() : null };
             }).filter(c => c.body && c.rect);
 
             function onPointerMove(moveEvent) {
@@ -681,7 +576,7 @@ function startApp() {
                     entry.end = minutesToTime(latestEndMin);
                     entry.day = currentTargetDay;
                     setModifiedState(true);
-                    saveState();
+                    saveCurrentState(notesTextarea?.value || '');
                     renderSchedule();
                 } else {
                     openEditModal(entry);
@@ -693,70 +588,7 @@ function startApp() {
         });
     }
 
-    // --- 7. REDIGER LEKTION MODAL ---
-    function openEditModal(entry) {
-        if (!editModal) return;
-        editingEntryId = entry.id;
-        editTitle.value = entry.title;
-        editStart.value = entry.start;
-        editEnd.value = entry.end;
-        editNote.value = entry.note || '';
-
-        const currentEffectiveColors = getBlockColors(entry);
-        editColor.value = entry.colorOverride && entry.overrideColor ? entry.overrideColor : currentEffectiveColors.color;
-        editUseOverride.checked = !!entry.colorOverride;
-        if (editIsTeaching) editIsTeaching.checked = isEntryTeaching(entry);
-
-        editModal.showModal();
-    }
-
-    if (editForm) {
-        editForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const entry = currentSchedule.find(item => item.id === editingEntryId);
-            if (entry) {
-                entry.title = editTitle.value.trim();
-                entry.start = editStart.value;
-                entry.end = editEnd.value;
-                entry.note = editNote.value.trim();
-
-                if (editIsTeaching) {
-                    entry.isTeaching = editIsTeaching.checked;
-                }
-
-                entry.colorOverride = editUseOverride.checked;
-                if (entry.colorOverride) {
-                    entry.overrideColor = editColor.value;
-                    entry.overrideTextColor = '#ffffff';
-                } else {
-                    entry.overrideColor = '';
-                }
-
-                setModifiedState(true);
-                saveState();
-                renderSchedule();
-            }
-            editModal.close();
-        });
-    }
-
-    if (btnDeleteEntry) {
-        btnDeleteEntry.addEventListener('click', () => {
-            currentSchedule = currentSchedule.filter(item => item.id !== editingEntryId);
-            setModifiedState(true);
-            saveState();
-            renderSchedule();
-            editModal.close();
-        });
-    }
-
-    const btnCancelEdit = document.getElementById('btn-cancel-edit');
-    const btnCloseEdit = document.getElementById('btn-close-edit');
-    if (btnCancelEdit && editModal) btnCancelEdit.addEventListener('click', () => editModal.close());
-    if (btnCloseEdit && editModal) btnCloseEdit.addEventListener('click', () => editModal.close());
-    if (editModal) editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.close(); });
-
-    // --- 8. PROTOTYPE DROPDOWN, LINKS & SKEMA-HANDLINGER ---
+    // --- SKABELON-DROPDOWN & SKEMA-HANDLINGER ---
     function updateProtoDropdown() {
         if (!protoSelect) return;
         protoSelect.innerHTML = '<option value="">-- Vælg foruddefineret skema --</option>';
@@ -794,10 +626,10 @@ function startApp() {
             });
         }
 
-        if (customPrototypes && customPrototypes.length > 0) {
+        if (state.customPrototypes && state.customPrototypes.length > 0) {
             const userGroup = document.createElement('optgroup');
             userGroup.label = '── Mine egne forslag ──';
-            customPrototypes.forEach(p => {
+            state.customPrototypes.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.id;
                 opt.textContent = p.name || 'Uden navn';
@@ -806,1279 +638,237 @@ function startApp() {
             protoSelect.appendChild(userGroup);
         }
 
-        protoSelect.value = activeProtoId || "";
+        protoSelect.value = state.activeProtoId || '';
         updateActionButtonsVisibility();
     }
 
     function loadPrototype(id, markModified = false) {
-        let proto = SETTINGS.prototypes.find(p => p.id === id) || customPrototypes.find(p => p.id === id);
-        if (proto) {
-            activeProtoId = proto.id;
-            currentTitle = proto.name;
-            currentSchedule = JSON.parse(JSON.stringify(proto.schedule || []));
-            currentNotes = proto.notes || "";
-            if (notesTextarea) notesTextarea.value = currentNotes;
-            if (titleDisplay) titleDisplay.textContent = currentTitle;
+        const proto = SETTINGS.prototypes.find(p => p.id === id) || state.customPrototypes.find(p => p.id === id);
+        if (!proto) return;
 
-            syncUrlState();
-            setModifiedState(markModified);
-            updateProtoDropdown();
-            saveState();
-            renderSchedule();
+        state.activeProtoId = proto.id;
+        state.currentTitle = proto.name;
+        state.currentSchedule = JSON.parse(JSON.stringify(proto.schedule || []));
+        state.currentNotes = proto.notes || '';
+        if (notesTextarea) notesTextarea.value = state.currentNotes;
+        if (titleDisplay) titleDisplay.textContent = state.currentTitle;
+
+        syncUrlState();
+        setModifiedState(markModified);
+        updateProtoDropdown();
+        saveCurrentState(notesTextarea?.value || '');
+        renderSchedule();
+    }
+
+    protoSelect?.addEventListener('change', (e) => {
+        if (e.target.value) loadPrototype(e.target.value, false);
+    });
+
+    btnCopyLink?.addEventListener('click', async () => {
+        if (!state.activeProtoId || state.activeProtoId.startsWith('custom_proto_')) return;
+        syncUrlState();
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            const orig = btnCopyLink.textContent;
+            btnCopyLink.textContent = '✅ Kopieret!';
+            setTimeout(() => { btnCopyLink.textContent = orig; }, 2000);
+        } catch (err) {
+            prompt('Kopiér dette link:', window.location.href);
         }
-    }
+    });
 
-    if (protoSelect) {
-        protoSelect.addEventListener('change', (e) => {
-            if (e.target.value) loadPrototype(e.target.value, false);
-        });
-    }
+    btnDeleteProto?.addEventListener('click', () => {
+        if (!state.activeProtoId || !state.activeProtoId.startsWith('custom_proto_')) return;
+        const p = state.customPrototypes.find(item => item.id === state.activeProtoId);
+        if (confirm(`Vil du slette forslaget "${p ? p.name : 'dette'}" permanent?`)) {
+            state.customPrototypes = state.customPrototypes.filter(item => item.id !== state.activeProtoId);
+            saveCustomPrototypes();
+            state.activeProtoId = null;
 
-    if (btnCopyLink) {
-        btnCopyLink.addEventListener('click', async () => {
-            if (!activeProtoId || activeProtoId.startsWith('custom_proto_')) return;
-            syncUrlState();
-            try {
-                await navigator.clipboard.writeText(window.location.href);
-                const orig = btnCopyLink.textContent;
-                btnCopyLink.textContent = '✅ Kopieret!';
-                setTimeout(() => { btnCopyLink.textContent = orig; }, 2000);
-            } catch (err) {
-                prompt('Kopiér dette link:', window.location.href);
-            }
-        });
-    }
-
-    if (btnDeleteProto) {
-        btnDeleteProto.addEventListener('click', () => {
-            if (!activeProtoId || !activeProtoId.startsWith('custom_proto_')) return;
-            const p = customPrototypes.find(item => item.id === activeProtoId);
-            if (confirm(`Vil du slette forslaget "${p ? p.name : 'dette'}" permanent?`)) {
-                customPrototypes = customPrototypes.filter(item => item.id !== activeProtoId);
-                localStorage.setItem(STORAGE_KEY_CUSTOM_PROTOS, JSON.stringify(customPrototypes));
-                activeProtoId = null;
-                if (SETTINGS.prototypes && SETTINGS.prototypes.length > 0) {
-                    loadPrototype(SETTINGS.prototypes[0].id, false);
-                } else {
-                    currentSchedule = [];
-                    currentTitle = "Skemaforslag";
-                    syncUrlState();
-                    setModifiedState(false);
-                    updateProtoDropdown();
-                    saveState();
-                    renderSchedule();
-                }
-            }
-        });
-    }
-
-    if (btnSaveProto) {
-        btnSaveProto.addEventListener('click', () => {
-            const name = prompt('Hvad skal dit skemaforslag hedde?', currentTitle !== 'Skemaforslag' ? currentTitle : 'Mit nye forslag');
-            if (!name || !name.trim()) return;
-            const newProto = {
-                id: 'custom_proto_' + Date.now(),
-                name: name.trim(),
-                notes: notesTextarea ? notesTextarea.value : '',
-                schedule: JSON.parse(JSON.stringify(currentSchedule))
-            };
-            customPrototypes.push(newProto);
-            localStorage.setItem(STORAGE_KEY_CUSTOM_PROTOS, JSON.stringify(customPrototypes));
-            activeProtoId = newProto.id;
-            currentTitle = newProto.name;
-            if (titleDisplay) titleDisplay.textContent = currentTitle;
-
-            syncUrlState();
-            setModifiedState(false);
-            updateProtoDropdown();
-            saveState();
-        });
-    }
-
-    if (btnInsertMeals) {
-        btnInsertMeals.addEventListener('click', () => {
-            ['man', 'tir', 'ons', 'tor', 'fre'].forEach(day => {
-                (SETTINGS.mealBlocks || []).forEach(meal => {
-                    if (!currentSchedule.some(item => item.day === day && item.title === meal.title)) {
-                        currentSchedule.push({
-                            id: 'meal_' + day + '_' + meal.title + '_' + Date.now(),
-                            day,
-                            title: meal.title,
-                            start: meal.start,
-                            end: meal.end,
-                            color: meal.color,
-                            textColor: meal.textColor,
-                            isTeaching: Boolean(meal.isTeaching),
-                            note: ''
-                        });
-                    }
-                });
-            });
-            setModifiedState(true);
-            saveState();
-            renderSchedule();
-        });
-    }
-
-    if (btnClearSchedule) {
-        btnClearSchedule.addEventListener('click', () => {
-            if (confirm('Vil du rydde alle lektioner i skemaet?')) {
-                currentSchedule = [];
-                setModifiedState(true);
-                saveState();
+            if (SETTINGS.prototypes && SETTINGS.prototypes.length > 0) {
+                loadPrototype(SETTINGS.prototypes[0].id, false);
+            } else {
+                state.currentSchedule = [];
+                state.currentTitle = 'Skemaforslag';
+                syncUrlState();
+                setModifiedState(false);
+                updateProtoDropdown();
+                saveCurrentState(notesTextarea?.value || '');
                 renderSchedule();
             }
-        });
-    }
+        }
+    });
 
-    if (notesTextarea) {
-        notesTextarea.addEventListener('input', () => {
-            currentNotes = notesTextarea.value;
-            setModifiedState(true);
-            saveState();
+    btnSaveProto?.addEventListener('click', () => {
+        const name = prompt('Hvad skal dit skemaforslag hedde?', state.currentTitle !== 'Skemaforslag' ? state.currentTitle : 'Mit nye forslag');
+        if (!name || !name.trim()) return;
+
+        const newProto = {
+            id: 'custom_proto_' + Date.now(),
+            name: name.trim(),
+            notes: notesTextarea ? notesTextarea.value : '',
+            schedule: JSON.parse(JSON.stringify(state.currentSchedule))
+        };
+        state.customPrototypes.push(newProto);
+        saveCustomPrototypes();
+
+        state.activeProtoId = newProto.id;
+        state.currentTitle = newProto.name;
+        if (titleDisplay) titleDisplay.textContent = state.currentTitle;
+
+        syncUrlState();
+        setModifiedState(false);
+        updateProtoDropdown();
+        saveCurrentState(notesTextarea?.value || '');
+    });
+
+    btnInsertMeals?.addEventListener('click', () => {
+        DAY_KEYS.forEach(day => {
+            (SETTINGS.mealBlocks || []).forEach(meal => {
+                if (!state.currentSchedule.some(item => item.day === day && item.title === meal.title)) {
+                    state.currentSchedule.push({
+                        id: 'meal_' + day + '_' + meal.title + '_' + Date.now(),
+                        day,
+                        title: meal.title,
+                        start: meal.start,
+                        end: meal.end,
+                        color: meal.color,
+                        textColor: meal.textColor,
+                        isTeaching: Boolean(meal.isTeaching),
+                        note: ''
+                    });
+                }
+            });
         });
-    }
+        setModifiedState(true);
+        saveCurrentState(notesTextarea?.value || '');
+        renderSchedule();
+    });
+
+    btnClearSchedule?.addEventListener('click', () => {
+        if (confirm('Vil du rydde alle lektioner i skemaet?')) {
+            state.currentSchedule = [];
+            setModifiedState(true);
+            saveCurrentState(notesTextarea?.value || '');
+            renderSchedule();
+        }
+    });
+
+    notesTextarea?.addEventListener('input', () => {
+        state.currentNotes = notesTextarea.value;
+        setModifiedState(true);
+        saveCurrentState(notesTextarea.value);
+    });
 
     document.querySelector('.editable-title-wrapper')?.addEventListener('click', () => {
-        const newName = prompt('Omdøb dette skemaforslag:', currentTitle);
+        const newName = prompt('Omdøb dette skemaforslag:', state.currentTitle);
         if (!newName || !newName.trim()) return;
-        currentTitle = newName.trim();
-        if (titleDisplay) titleDisplay.textContent = currentTitle;
-        if (activeProtoId && activeProtoId.startsWith('custom_proto_')) {
-            const p = customPrototypes.find(item => item.id === activeProtoId);
-            if (p) p.name = currentTitle;
-            localStorage.setItem(STORAGE_KEY_CUSTOM_PROTOS, JSON.stringify(customPrototypes));
+
+        state.currentTitle = newName.trim();
+        if (titleDisplay) titleDisplay.textContent = state.currentTitle;
+        if (state.activeProtoId && state.activeProtoId.startsWith('custom_proto_')) {
+            const p = state.customPrototypes.find(item => item.id === state.activeProtoId);
+            if (p) p.name = state.currentTitle;
+            saveCustomPrototypes();
             updateProtoDropdown();
         }
         setModifiedState(true);
-        saveState();
+        saveCurrentState(notesTextarea?.value || '');
     });
 
-    if (btnNewBlock && customModal) {
-        btnNewBlock.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (customIsTeaching) customIsTeaching.checked = true;
-            customModal.showModal();
-        });
-        const btnCancelCustomBlock = document.getElementById('btn-cancel-custom-block');
-        if (btnCancelCustomBlock) btnCancelCustomBlock.addEventListener('click', () => customModal.close());
-        customModal.addEventListener('click', (e) => { if (e.target === customModal) customModal.close(); });
-
-        const customBlockForm = document.getElementById('custom-block-form');
-        if (customBlockForm) {
-            customBlockForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const title = customTitle.value.trim();
-                if (!title) return;
-                customBlocks.push({
-                    id: 'cb_' + Date.now(),
-                    title,
-                    color: customColor.value,
-                    textColor: '#ffffff',
-                    defaultDuration: parseInt(customDuration.value, 10),
-                    isTeaching: customIsTeaching ? customIsTeaching.checked : true
-                });
-                localStorage.setItem(STORAGE_KEY_CUSTOM_BLOCKS, JSON.stringify(customBlocks));
-                renderPaletteAndStats();
-                customTitle.value = '';
-                customModal.close();
-            });
-        }
-    }
-
-    if (btnExportJson) {
-        btnExportJson.addEventListener('click', () => {
-            const blob = new Blob([JSON.stringify({
-                id: 'proto_' + Date.now(),
-                name: currentTitle,
-                notes: notesTextarea ? notesTextarea.value : "",
-                schedule: currentSchedule
-            }, null, 4)], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${currentTitle.replace(/[^a-z0-9æøå]/gi, '_').toLowerCase()}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        });
-    }
-
-    if (btnExportImage) {
-        btnExportImage.addEventListener('click', () => {
-            const target = document.getElementById('export-target');
-            if (!target || typeof window.html2canvas !== 'function') return;
-            if (scheduleCardActions) scheduleCardActions.style.display = 'none';
-            window.html2canvas(target, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
-                if (scheduleCardActions) scheduleCardActions.style.display = 'flex';
-                const a = document.createElement('a');
-                a.download = `${currentTitle.replace(/\s+/g, '_')}_VIH.png`;
-                a.href = canvas.toDataURL('image/png');
-                a.click();
-            }).catch(() => { if (scheduleCardActions) scheduleCardActions.style.display = 'flex'; });
-        });
-    }
-
-    // --- 9. SEMESTER SIMULATOR, BRUTTOLISTE & DIREKTE UGE-OVERRIDES ---
-    function populateSemesterDropdown() {
-        if (!semesterSelect) return;
-        semesterSelect.innerHTML = '';
-        if (scannedCalendars.length === 0) {
-            const opt = document.createElement('option');
-            opt.value = '';
-            opt.textContent = 'Ingen filer i /calendars/';
-            semesterSelect.appendChild(opt);
-            return;
-        }
-        scannedCalendars.forEach(cal => {
-            const opt = document.createElement('option');
-            opt.value = cal.id;
-            opt.textContent = cal.name;
-            semesterSelect.appendChild(opt);
-        });
-    }
-
-    function hasLocalCalendarEdits(calId) {
-        const extraPlacements = wishPlacementsByCal[calId] || [];
-        const extraWishes = customWishesByCal[calId] || [];
-        const ov = weekOverridesByCal[calId] || { added: [], removed: [] };
-        return extraPlacements.length > 0 || extraWishes.length > 0 || (ov.added && ov.added.length > 0) || (ov.removed && ov.removed.length > 0);
-    }
-
-    function getActiveCalendar() {
-        if (!semesterSelect || scannedCalendars.length === 0) return null;
-        const baseCal = scannedCalendars.find(c => c.id === semesterSelect.value) || scannedCalendars[0];
-        if (!baseCal) return null;
-
-        const cal = JSON.parse(JSON.stringify(baseCal));
-        if (!cal.wishes) cal.wishes = [];
-
-        // Markér base-ændringer med deres oprindelige indeks før filtrering
-        cal.weeks.forEach(w => {
-            (w.changes || []).forEach((c, idx) => {
-                c._source = 'base';
-                c._baseIdx = idx;
-            });
-        });
-
-        // 1. Flet egne ønsker ind
-        const extraWishes = customWishesByCal[cal.id] || [];
-        extraWishes.forEach(cw => cal.wishes.push({ ...cw, _customWish: true }));
-
-        // 2. Fjern slettede/redigerede base-ændringer
-        const ovData = weekOverridesByCal[cal.id] || { added: [], removed: [] };
-        (ovData.removed || []).forEach(rem => {
-            const wObj = cal.weeks.find(w => w.week === rem.week);
-            if (wObj && wObj.changes) {
-                wObj.changes = wObj.changes.filter(c => {
-                    if (c._source !== 'base') return true;
-                    if (typeof rem.baseIdx === 'number') return c._baseIdx !== rem.baseIdx;
-                    return !(c.day === rem.day && c.title === rem.title && (c.start || '') === (rem.start || ''));
-                });
-            }
-        });
-
-        // 3. Flet fastlagte ønsker ind i ugerne
-        const extraPlacements = wishPlacementsByCal[cal.id] || [];
-        extraPlacements.forEach(pl => {
-            const wObj = cal.weeks.find(w => w.week === pl.week);
-            if (wObj) {
-                if (!wObj.changes) wObj.changes = [];
-                wObj.changes.push({ ...pl.change, _fromBrowser: true, _source: 'wish' });
-            }
-        });
-
-        // 4. Flet lokale uge-overrides ind i ugerne
-        (ovData.added || []).forEach(ov => {
-            const wObj = cal.weeks.find(w => w.week === ov.week);
-            if (wObj) {
-                if (!wObj.changes) wObj.changes = [];
-                wObj.changes.push({ ...ov.change, _fromBrowser: true, _source: 'override', _overrideId: ov.id });
-            }
-        });
-
-        return cal;
-    }
-
-    function resetAllLocalCalendarEdits(calId) {
-        delete wishPlacementsByCal[calId];
-        delete customWishesByCal[calId];
-        delete weekOverridesByCal[calId];
-        localStorage.setItem(STORAGE_KEY_WISH_PLACEMENTS, JSON.stringify(wishPlacementsByCal));
-        localStorage.setItem(STORAGE_KEY_CUSTOM_WISHES, JSON.stringify(customWishesByCal));
-        localStorage.setItem(STORAGE_KEY_WEEK_OVERRIDES, JSON.stringify(weekOverridesByCal));
-        renderSemesterSimulation();
-    }
-
-    // Wish Modal Events
-    if (wishTypeSelect && wishTargetBlockGroup) {
-        wishTypeSelect.addEventListener('change', () => {
-            wishTargetBlockGroup.style.display = wishTypeSelect.value === 'immersion' ? 'flex' : 'none';
-        });
-    }
-    if (btnNewWish && wishModal) {
-        btnNewWish.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (wishForm) wishForm.reset();
-            if (wishTargetBlockGroup) wishTargetBlockGroup.style.display = 'none';
-            wishModal.showModal();
-        });
-    }
-    const btnCloseWishModal = document.getElementById('btn-close-wish-modal');
-    const btnCancelWishModal = document.getElementById('btn-cancel-wish-modal');
-    if (btnCloseWishModal && wishModal) btnCloseWishModal.addEventListener('click', () => wishModal.close());
-    if (btnCancelWishModal && wishModal) btnCancelWishModal.addEventListener('click', () => wishModal.close());
-    if (wishModal) wishModal.addEventListener('click', (e) => { if (e.target === wishModal) wishModal.close(); });
-
-    if (wishForm && wishModal) {
-        wishForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const cal = getActiveCalendar();
-            if (!cal) return;
-            const title = wishTitleInput.value.trim();
-            if (!title) return;
-            const type = wishTypeSelect.value;
-            const prefRaw = wishPrefWeeksInput.value.trim();
-            const preferredWeeks = prefRaw ? prefRaw.split(/[,\s;]+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n)) : [];
-
-            const newWish = {
-                id: 'custom_wish_' + Date.now(),
-                title,
-                type,
-                ...(type === 'immersion' ? { targetBlock: wishTargetBlockSelect.value } : {}),
-                start: wishStartInput.value || (type === 'buffer_or_event' ? '10:00' : '08:00'),
-                end: wishEndInput.value || (type === 'buffer_or_event' ? '11:50' : '16:00'),
-                preferredWeeks
-            };
-
-            if (!customWishesByCal[cal.id]) customWishesByCal[cal.id] = [];
-            customWishesByCal[cal.id].push(newWish);
-            localStorage.setItem(STORAGE_KEY_CUSTOM_WISHES, JSON.stringify(customWishesByCal));
-
-            setSectionOpen(sectionWishes, toggleWishesBtn, wishesBody, true);
-            sidebarSectionsState.wishesOpen = true;
-            saveSidebarSectionsState();
-            wishModal.close();
-            renderSemesterSimulation();
-        });
-    }
-
-    // Override Modal: Åbn til oprettelse eller redigering af en konkret brik i skemaet
-    function populateOverrideWeekOptions(cal, selectedWeekNum) {
-        if (!overrideWeekSelect || !cal) return;
-        overrideWeekSelect.innerHTML = cal.weeks
-            .map(w => `<option value="${w.week}">Uge ${w.week} (${w.label || 'Normaluge'})</option>`)
-            .join('');
-        if (selectedWeekNum !== undefined) {
-            overrideWeekSelect.value = selectedWeekNum;
-        }
-    }
-
-    function openCreateOverrideModal() {
-        const cal = getActiveCalendar();
-        if (!cal || !overrideModal) return;
-
-        editingOverrideContext = null;
-        if (overrideModalTitle) overrideModalTitle.textContent = 'Tilføj ændring / override';
-        if (btnDeleteOverride) btnDeleteOverride.style.display = 'none';
-
-        const defaultWeek = cal.weeks[selectedSimWeekIndex] ? cal.weeks[selectedSimWeekIndex].week : cal.weeks[0]?.week;
-        populateOverrideWeekOptions(cal, defaultWeek);
-
-        if (overrideDaySelect) overrideDaySelect.value = 'man';
-        if (overrideTypeSelect) overrideTypeSelect.value = 'event';
-        if (overrideTitleInput) overrideTitleInput.value = '';
-        if (overrideStartInput) overrideStartInput.value = '08:00';
-        if (overrideEndInput) overrideEndInput.value = '12:00';
-        if (overrideTargetBlockGroup) overrideTargetBlockGroup.style.display = 'none';
-
-        overrideModal.showModal();
-    }
-
-    function openEditOverrideModal(cal, weekNum, simItem) {
-        if (!cal || !overrideModal || !simItem) return;
-
-        editingOverrideContext = {
-            calId: cal.id,
-            week: weekNum,
-            source: simItem._source || 'base',
-            overrideId: simItem._overrideId || null,
-            wishId: simItem.wishId || null,
-            baseIdx: simItem._baseIdx,
-            origDay: simItem.day,
-            origTitle: simItem.title,
-            origStart: simItem.start,
-            origEnd: simItem.end
-        };
-
-        if (overrideModalTitle) overrideModalTitle.textContent = `Rediger ændring (Uge ${weekNum})`;
-        if (btnDeleteOverride) btnDeleteOverride.style.display = 'inline-block';
-
-        populateOverrideWeekOptions(cal, weekNum);
-        if (overrideDaySelect) overrideDaySelect.value = simItem.day || 'man';
-        if (overrideTypeSelect) overrideTypeSelect.value = simItem.rawType || 'event';
-        if (overrideTitleInput) overrideTitleInput.value = simItem.title || '';
-        if (overrideStartInput) overrideStartInput.value = simItem.start || '08:00';
-        if (overrideEndInput) overrideEndInput.value = simItem.end || '16:00';
-
-        if (overrideTargetBlockGroup) {
-            const isImm = (simItem.rawType === 'immersion');
-            overrideTargetBlockGroup.style.display = isImm ? 'flex' : 'none';
-            if (isImm && simItem.targetBlock && overrideTargetBlockSelect) {
-                overrideTargetBlockSelect.value = simItem.targetBlock;
-            }
-        }
-
-        overrideModal.showModal();
-    }
-
-    if (overrideTypeSelect && overrideTargetBlockGroup) {
-        overrideTypeSelect.addEventListener('change', () => {
-            overrideTargetBlockGroup.style.display = overrideTypeSelect.value === 'immersion' ? 'flex' : 'none';
-        });
-    }
-    if (btnAddWeekOverride) {
-        btnAddWeekOverride.addEventListener('click', openCreateOverrideModal);
-    }
-
-    const btnCloseOverrideModal = document.getElementById('btn-close-override-modal');
-    const btnCancelOverrideModal = document.getElementById('btn-cancel-override-modal');
-    if (btnCloseOverrideModal && overrideModal) btnCloseOverrideModal.addEventListener('click', () => overrideModal.close());
-    if (btnCancelOverrideModal && overrideModal) btnCancelOverrideModal.addEventListener('click', () => overrideModal.close());
-    if (overrideModal) overrideModal.addEventListener('click', (e) => { if (e.target === overrideModal) overrideModal.close(); });
-
-    if (btnDeleteOverride && overrideModal) {
-        btnDeleteOverride.addEventListener('click', () => {
-            if (!editingOverrideContext) return;
-            const ctx = editingOverrideContext;
-
-            if (ctx.source === 'wish' && ctx.wishId) {
-                unlockWishFromCalendar(ctx.calId, ctx.wishId);
-            } else if (ctx.source === 'override' && ctx.overrideId) {
-                if (weekOverridesByCal[ctx.calId]) {
-                    weekOverridesByCal[ctx.calId].added = weekOverridesByCal[ctx.calId].added.filter(o => o.id !== ctx.overrideId);
-                    localStorage.setItem(STORAGE_KEY_WEEK_OVERRIDES, JSON.stringify(weekOverridesByCal));
-                }
-                renderSemesterSimulation();
-            } else {
-                if (!weekOverridesByCal[ctx.calId]) weekOverridesByCal[ctx.calId] = { added: [], removed: [] };
-                weekOverridesByCal[ctx.calId].removed.push({
-                    week: ctx.week,
-                    baseIdx: ctx.baseIdx,
-                    day: ctx.origDay,
-                    title: ctx.origTitle,
-                    start: ctx.origStart || '',
-                    end: ctx.origEnd || ''
-                });
-                localStorage.setItem(STORAGE_KEY_WEEK_OVERRIDES, JSON.stringify(weekOverridesByCal));
-                renderSemesterSimulation();
-            }
-
-            editingOverrideContext = null;
-            overrideModal.close();
-        });
-    }
-
-    if (overrideForm && overrideModal) {
-        overrideForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const cal = getActiveCalendar();
-            if (!cal) return;
-
-            const wk = parseInt(overrideWeekSelect.value, 10);
-            const day = overrideDaySelect.value;
-            const type = overrideTypeSelect.value;
-            const title = overrideTitleInput.value.trim();
-            const start = overrideStartInput.value || '08:00';
-            const end = overrideEndInput.value || '16:00';
-            if (!title) return;
-
-            const updatedChange = {
-                day,
-                start,
-                end,
-                type,
-                ...(type === 'immersion' ? { targetBlock: overrideTargetBlockSelect.value } : {}),
-                title
-            };
-
-            if (editingOverrideContext) {
-                const ctx = editingOverrideContext;
-                if (ctx.source === 'wish' && ctx.wishId) {
-                    const list = wishPlacementsByCal[ctx.calId] || [];
-                    const pl = list.find(p => p.wishId === ctx.wishId);
-                    if (pl) {
-                        pl.week = wk;
-                        pl.change = { ...updatedChange, wishId: ctx.wishId };
-                        localStorage.setItem(STORAGE_KEY_WISH_PLACEMENTS, JSON.stringify(wishPlacementsByCal));
-                    }
-                } else if (ctx.source === 'override' && ctx.overrideId) {
-                    const ovData = weekOverridesByCal[ctx.calId];
-                    const ov = ovData && ovData.added.find(o => o.id === ctx.overrideId);
-                    if (ov) {
-                        ov.week = wk;
-                        ov.change = updatedChange;
-                        localStorage.setItem(STORAGE_KEY_WEEK_OVERRIDES, JSON.stringify(weekOverridesByCal));
-                    }
-                } else {
-                    // Base-ændring fra JSON: markér originalen som fjernet og tilføj den rettede som lokal override
-                    if (!weekOverridesByCal[ctx.calId]) weekOverridesByCal[ctx.calId] = { added: [], removed: [] };
-                    weekOverridesByCal[ctx.calId].removed.push({
-                        week: ctx.week,
-                        baseIdx: ctx.baseIdx,
-                        day: ctx.origDay,
-                        title: ctx.origTitle,
-                        start: ctx.origStart || '',
-                        end: ctx.origEnd || ''
-                    });
-                    weekOverridesByCal[ctx.calId].added.push({
-                        id: 'ov_' + Date.now(),
-                        week: wk,
-                        change: updatedChange
-                    });
-                    localStorage.setItem(STORAGE_KEY_WEEK_OVERRIDES, JSON.stringify(weekOverridesByCal));
-                }
-            } else {
-                if (!weekOverridesByCal[cal.id]) weekOverridesByCal[cal.id] = { added: [], removed: [] };
-                weekOverridesByCal[cal.id].added.push({
-                    id: 'ov_' + Date.now(),
-                    week: wk,
-                    change: updatedChange
-                });
-                localStorage.setItem(STORAGE_KEY_WEEK_OVERRIDES, JSON.stringify(weekOverridesByCal));
-            }
-
-            const wIdx = cal.weeks.findIndex(w => w.week === wk);
-            if (wIdx !== -1) selectedSimWeekIndex = wIdx;
-
-            editingOverrideContext = null;
-            overrideModal.close();
-            syncUrlState();
-            renderSemesterSimulation();
-        });
-    }
-
-    function simulateWeek(weekObj, baseSchedule, useBufferRescue) {
-        const days = ['man', 'tir', 'ons', 'tor', 'fre'];
-        const changes = weekObj.changes || [];
-        const dayResults = {};
-        const cancelledSubjectBlocks = [];
-
-        days.forEach(day => {
-            const dayChanges = changes.filter(c => c.day === day);
-            const dayBase = baseSchedule.filter(e => e.day === day).sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
-            const items = [];
-
-            dayBase.forEach(entry => {
-                const eStart = timeToMinutes(entry.start);
-                const eEnd = timeToMinutes(entry.end);
-                const eDur = Math.max(eEnd - eStart, 0);
-                const isMeal = MEAL_TITLES.includes(entry.title);
-                const teachingFlag = isEntryTeaching(entry);
-
-                const overlappingChange = !isMeal && dayChanges.find(chg => {
-                    return (Math.min(eEnd, timeToMinutes(chg.end || '23:59')) - Math.max(eStart, timeToMinutes(chg.start || '00:00'))) > 10;
-                });
-
-                if (overlappingChange) {
-                    items.push({ ...entry, isMeal, isTeaching: teachingFlag, simStatus: 'cancelled', simReason: overlappingChange.title || 'Aflyst', effectiveMinutes: 0 });
-                    if (teachingFlag) {
-                        cancelledSubjectBlocks.push({ title: entry.title, duration: eDur, day });
-                    }
-                } else {
-                    items.push({ ...entry, isMeal, isTeaching: teachingFlag, simStatus: 'normal', effectiveMinutes: eDur });
-                }
-            });
-
-            dayChanges.forEach(chg => {
-                const cStart = timeToMinutes(chg.start || '08:00');
-                const cEnd = timeToMinutes(chg.end || '16:00');
-                const lunchOverlap = Math.max(0, Math.min(cEnd, 750) - Math.max(cStart, 720));
-                const netMins = chg.effectiveMinutes !== undefined ? chg.effectiveMinutes : Math.max(0, (cEnd - cStart) - lunchOverlap);
-                const isHoliday = chg.type === 'holiday';
-                const isNoTeaching = isHoliday || chg.type === 'cancel';
-
-                items.push({
-                    day,
-                    title: chg.title,
-                    start: chg.start || '08:00',
-                    end: chg.end || '16:00',
-                    isMeal: false,
-                    isTeaching: !isNoTeaching,
-                    rawType: chg.type || 'event',
-                    simStatus: chg.type === 'immersion' ? 'immersion' : (isHoliday ? 'holiday' : (chg.type === 'cancel' ? 'cancel_notice' : 'event')),
-                    targetBlock: chg.targetBlock || null,
-                    effectiveMinutes: isNoTeaching ? 0 : netMins,
-                    _source: chg._source || 'base',
-                    _baseIdx: chg._baseIdx,
-                    _overrideId: chg._overrideId || null,
-                    wishId: chg.wishId || null
-                });
-            });
-
-            items.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
-            dayResults[day] = { items, changes: dayChanges };
-        });
-
-        if (useBufferRescue && cancelledSubjectBlocks.length > 0) {
-            days.forEach(day => {
-                dayResults[day].items.forEach(item => {
-                    if (item.title === 'BUFFER' && item.simStatus === 'normal' && cancelledSubjectBlocks.length > 0) {
-                        const rescued = cancelledSubjectBlocks.shift();
-                        item.title = `${rescued.title} (via BUFFER)`;
-                        item.rescuedTitle = rescued.title;
-                        item.isTeaching = true;
-                        item.simStatus = 'rescued';
-                    }
-                });
-            });
-        }
-        return dayResults;
-    }
-
-    function suggestPlacementsForWish(wish, simulatedWeeks, blockStats) {
-        const candidates = [];
-        const prefWeeks = Array.isArray(wish.preferredWeeks) && wish.preferredWeeks.length > 0 ? wish.preferredWeeks : simulatedWeeks.map(w => w.week);
-
-        simulatedWeeks.forEach(w => {
-            const isPreferredWeek = prefWeeks.includes(w.week);
-            ['man', 'tir', 'ons', 'tor', 'fre'].forEach(day => {
-                const dayObj = w.days[day];
-                if (dayObj.changes.some(c => c.type === 'holiday' || (timeToMinutes(c.end || '16:00') - timeToMinutes(c.start || '08:00') >= 360))) return;
-
-                if (wish.type === 'buffer_or_event') {
-                    const freeBuffer = dayObj.items.find(i => i.title === 'BUFFER' && i.simStatus === 'normal');
-                    if (freeBuffer) {
-                        let score = 200;
-                        if (isPreferredWeek) score += 60;
-                        if (dayObj.changes.length > 0) score += 15;
-                        candidates.push({
-                            week: w.week, weekLabel: w.label || '', day, start: freeBuffer.start, end: freeBuffer.end,
-                            type: 'event', targetBlock: null, viaBuffer: true, lostMinutes: 0, impactText: '0t tab (via BUFFER)', score
-                        });
-                        return;
-                    }
-                }
-
-                const cStartStr = wish.start || (wish.type === 'buffer_or_event' ? '10:00' : '08:00');
-                const cEndStr = wish.end || (wish.type === 'buffer_or_event' ? '11:50' : '16:00');
-                const cStart = timeToMinutes(cStartStr);
-                const cEnd = timeToMinutes(cEndStr);
-                let lostMinutes = 0, deficitPenalty = 0, targetAlreadyOnDay = false;
-                const affectedBlocks = new Set();
-
-                dayObj.items.forEach(item => {
-                    if (item.simStatus !== 'normal' || item.isMeal) return;
-                    if (Math.min(timeToMinutes(item.end), cEnd) - Math.max(timeToMinutes(item.start), cStart) > 10) {
-                        if (wish.type === 'immersion' && item.title === wish.targetBlock) {
-                            targetAlreadyOnDay = true;
-                        } else if (item.isTeaching) {
-                            lostMinutes += item.effectiveMinutes;
-                            affectedBlocks.add(item.title);
-                            if (blockStats[item.title] && blockStats[item.title].actualMin < blockStats[item.title].plannedMin) deficitPenalty += 40;
-                        }
-                    }
-                });
-
-                let score = 100 - (lostMinutes / 10) - deficitPenalty;
-                if (isPreferredWeek) score += 50;
-                if (targetAlreadyOnDay) score += 25;
-                if (dayObj.changes.length > 0) score += 15;
-
-                candidates.push({
-                    week: w.week, weekLabel: w.label || '', day, start: cStartStr, end: cEndStr,
-                    type: wish.type === 'immersion' ? 'immersion' : 'event',
-                    targetBlock: wish.targetBlock || null, viaBuffer: false, lostMinutes,
-                    impactText: lostMinutes === 0 ? '0t tab for andre fag' : `Aflyser ${(lostMinutes / 60).toFixed(1)}t (${Array.from(affectedBlocks).join(', ')})`,
-                    score
-                });
-            });
-        });
-        candidates.sort((a, b) => b.score - a.score);
-        return candidates.slice(0, 3);
-    }
-
-    function lockWishIntoCalendar(calId, wish, placement) {
-        if (!wishPlacementsByCal[calId]) wishPlacementsByCal[calId] = [];
-        wishPlacementsByCal[calId].push({
-            wishId: wish.id,
-            week: placement.week,
-            change: {
-                wishId: wish.id,
-                day: placement.day,
-                start: placement.start,
-                end: placement.end,
-                type: placement.type,
-                ...(placement.targetBlock ? { targetBlock: placement.targetBlock } : {}),
-                title: wish.title
-            }
-        });
-        localStorage.setItem(STORAGE_KEY_WISH_PLACEMENTS, JSON.stringify(wishPlacementsByCal));
-        renderSemesterSimulation();
-    }
-
-    function unlockWishFromCalendar(calId, wishId) {
-        if (!wishPlacementsByCal[calId]) return;
-        wishPlacementsByCal[calId] = wishPlacementsByCal[calId].filter(p => p.wishId !== wishId);
-        localStorage.setItem(STORAGE_KEY_WISH_PLACEMENTS, JSON.stringify(wishPlacementsByCal));
-        renderSemesterSimulation();
-    }
-
-    function deleteCustomWish(calId, wishId) {
-        if (customWishesByCal[calId]) {
-            customWishesByCal[calId] = customWishesByCal[calId].filter(w => w.id !== wishId);
-            localStorage.setItem(STORAGE_KEY_CUSTOM_WISHES, JSON.stringify(customWishesByCal));
-        }
-        unlockWishFromCalendar(calId, wishId);
-    }
-
-    function renderWishesSection(cal, simulatedWeeks, blockStats) {
-        if (!simWishesContainer) return;
-        const hasEdits = hasLocalCalendarEdits(cal.id);
-        if (btnResetWishes) btnResetWishes.style.display = hasEdits ? 'inline-block' : 'none';
-        if (btnResetCalendarOverrides) btnResetCalendarOverrides.style.display = hasEdits ? 'inline-block' : 'none';
-
-        const wishes = cal.wishes || [];
-        if (wishes.length === 0) {
-            if (wishesCounterBadge) wishesCounterBadge.textContent = '0/0';
-            simWishesContainer.innerHTML = `<p style="font-size:0.74rem; color:#64748b;">Klik på <strong>+</strong> for at oprette ønsker.</p>`;
-            return;
-        }
-
-        const usedChangeKeys = new Set();
-        let scheduledCount = 0;
-
-        const wishItemsHtml = wishes.map(w => {
-            let foundMatch = null;
-            for (const weekObj of cal.weeks) {
-                const changes = weekObj.changes || [];
-                for (let cIdx = 0; cIdx < changes.length; cIdx++) {
-                    const chg = changes[cIdx];
-                    const uniqueKey = `${weekObj.week}_${cIdx}`;
-                    if (usedChangeKeys.has(uniqueKey)) continue;
-
-                    const idMatch = chg.wishId && chg.wishId === w.id;
-                    const titleMatch = !chg.wishId && chg.title && chg.title.trim().toLowerCase() === w.title.trim().toLowerCase();
-
-                    if (idMatch || titleMatch) {
-                        usedChangeKeys.add(uniqueKey);
-                        foundMatch = { week: weekObj.week, day: chg.day, start: chg.start, end: chg.end, fromBrowser: Boolean(chg._fromBrowser) };
-                        break;
-                    }
-                }
-                if (foundMatch) break;
-            }
-
-            if (foundMatch) {
-                scheduledCount++;
-                const dayShort = DAY_SHORT[foundMatch.day] || foundMatch.day;
-                return `
-                    <div class="sb-wish-item is-scheduled">
-                        <div class="sb-wish-main-row">
-                            <div class="sb-wish-left">
-                                <span class="sb-wish-status-icon is-done" title="Skemalagt">✓</span>
-                                <span class="sb-wish-title" title="${w.title}">${w.title}</span>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:3px; flex-shrink:0;">
-                                <span class="sb-wish-badge">Uge ${foundMatch.week} · ${dayShort}</span>
-                                ${foundMatch.fromBrowser ? `<button type="button" class="btn-unlock-wish" data-wish-id="${w.id}" title="Fjern placering" style="background:none; border:none; cursor:pointer; font-size:0.9rem; line-height:1; color:#dc2626; padding:0 2px;">&times;</button>` : ''}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            const suggestions = suggestPlacementsForWish(w, simulatedWeeks, blockStats);
-            const bestSug = suggestions[0];
-            const prefText = Array.isArray(w.preferredWeeks) && w.preferredWeeks.length > 0 ? `Ønsket: uge ${w.preferredWeeks.join(', ')}` : 'Hele semesteret';
-
-            const bestSugHtml = bestSug ? `
-                <div class="sb-wish-sug-box">
-                    <div style="min-width:0;">
-                        <strong>Uge ${bestSug.week} · ${DAY_SHORT[bestSug.day]}</strong>
-                        <div style="font-size:0.65rem; color:${bestSug.lostMinutes === 0 ? '#15803d' : '#64748b'}; font-weight:${bestSug.lostMinutes === 0 ? '700' : '400'};">
-                            ${bestSug.impactText}
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-outline btn-apply-wish-sug" data-wish-id="${w.id}" data-sug-idx="0" style="padding:2px 7px; font-size:0.69rem; white-space:nowrap;">
-                        + Læg fast
-                    </button>
-                </div>
-            ` : '';
-
-            const altSugsHtml = suggestions.slice(1).map((sug, idx) => `
-                <div class="sb-wish-sug-box">
-                    <div style="min-width:0;">
-                        <strong>Uge ${sug.week} · ${DAY_SHORT[sug.day]}</strong>
-                        <div style="font-size:0.64rem; color:#64748b;">${sug.impactText}</div>
-                    </div>
-                    <button type="button" class="btn btn-outline btn-apply-wish-sug" data-wish-id="${w.id}" data-sug-idx="${idx + 1}" style="padding:2px 6px; font-size:0.67rem;">
-                        + Læg fast
-                    </button>
-                </div>
-            `).join('');
-
-            const weekOptions = cal.weeks.map(wk => `<option value="${wk.week}">Uge ${wk.week}</option>`).join('');
-
-            return `
-                <div class="sb-wish-item is-pending" data-wish-card="${w.id}">
-                    <div class="sb-wish-main-row">
-                        <div class="sb-wish-left">
-                            <span class="sb-wish-status-icon is-open" title="Mangler placering">○</span>
-                            <div>
-                                <div class="sb-wish-title">${w.title}</div>
-                                <div class="sb-wish-sub">${prefText}</div>
-                            </div>
-                        </div>
-                        ${w._customWish ? `<button type="button" class="btn-delete-custom-wish" data-wish-id="${w.id}" title="Slet ønske" style="background:none; border:none; cursor:pointer; font-size:0.95rem; color:#92400e; padding:0 2px;">&times;</button>` : ''}
-                    </div>
-                    <div class="sb-wish-actions">
-                        ${bestSugHtml}
-                        <details class="sb-wish-more-details">
-                            <summary>Flere forslag / vælg selv</summary>
-                            <div class="sb-wish-more-body">
-                                ${altSugsHtml}
-                                <div style="display:flex; gap:4px; align-items:center; margin-top:2px;">
-                                    <select class="select-input manual-wish-week" style="padding:2px 4px; font-size:0.7rem; flex:1;">${weekOptions}</select>
-                                    <select class="select-input manual-wish-day" style="padding:2px 4px; font-size:0.7rem;">
-                                        <option value="man">Man</option>
-                                        <option value="tir">Tir</option>
-                                        <option value="ons">Ons</option>
-                                        <option value="tor" selected>Tor</option>
-                                        <option value="fre">Fre</option>
-                                    </select>
-                                    <button type="button" class="btn btn-outline btn-manual-lock" data-wish-id="${w.id}" style="padding:2px 6px; font-size:0.7rem;">Lås</button>
-                                </div>
-                            </div>
-                        </details>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        if (wishesCounterBadge) wishesCounterBadge.textContent = `${scheduledCount}/${wishes.length}`;
-        simWishesContainer.innerHTML = wishItemsHtml;
-
-        simWishesContainer.querySelectorAll('.btn-apply-wish-sug').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const wish = wishes.find(x => x.id === btn.dataset.wishId);
-                const chosen = suggestPlacementsForWish(wish, simulatedWeeks, blockStats)[parseInt(btn.dataset.sugIdx, 10)];
-                if (chosen) lockWishIntoCalendar(cal.id, wish, chosen);
-            });
-        });
-        simWishesContainer.querySelectorAll('.btn-manual-lock').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const wish = wishes.find(x => x.id === btn.dataset.wishId);
-                const card = btn.closest('.sb-wish-item');
-                if (!wish || !card) return;
-                lockWishIntoCalendar(cal.id, wish, {
-                    week: parseInt(card.querySelector('.manual-wish-week').value, 10),
-                    day: card.querySelector('.manual-wish-day').value,
-                    start: wish.start || '08:00',
-                    end: wish.end || '16:00',
-                    type: wish.type === 'immersion' ? 'immersion' : 'event',
-                    targetBlock: wish.targetBlock || null
-                });
-            });
-        });
-        simWishesContainer.querySelectorAll('.btn-unlock-wish').forEach(btn => {
-            btn.addEventListener('click', () => unlockWishFromCalendar(cal.id, btn.dataset.wishId));
-        });
-        simWishesContainer.querySelectorAll('.btn-delete-custom-wish').forEach(btn => {
-            btn.addEventListener('click', () => deleteCustomWish(cal.id, btn.dataset.wishId));
-        });
-    }
-
-    function renderSemesterSimulation() {
-        const cal = getActiveCalendar();
-        if (simProtoName) simProtoName.textContent = currentTitle;
-
-        if (!cal) {
-            if (simKpiRow) simKpiRow.innerHTML = '<p style="color:#64748b;">Læg en kalender-JSON i mappen <code>/calendars/</code> for at starte simuleringen.</p>';
-            return;
-        }
-
-        const useBuffer = simUseBuffer ? simUseBuffer.checked : true;
-        const weeks = cal.weeks || [];
-        if (selectedSimWeekIndex >= weeks.length) selectedSimWeekIndex = 0;
-
-        const simulatedWeeks = weeks.map(w => ({ ...w, days: simulateWeek(w, currentSchedule, useBuffer) }));
-
-        // 1. Sammentæl fagblokke (kun brikker valgt til som undervisning tæller i timetallet)
-        const blockStats = {};
-        currentSchedule.forEach(e => {
-            if (isEntryTeaching(e) && !blockStats[e.title]) {
-                blockStats[e.title] = { plannedCount: 0, plannedMin: 0, actualCount: 0, actualMin: 0, immersionMin: 0 };
-            }
-        });
-
-        let normalWeeksCount = 0;
-        let holidayDaysCount = 0;
-        let totalTeachingHours = 0;
-        const dayNormalCounts = { man: 0, tir: 0, ons: 0, tor: 0, fre: 0 };
-
-        simulatedWeeks.forEach(w => {
-            if (!w.changes || w.changes.length === 0) normalWeeksCount++;
-            let weekTeachingMin = 0;
-
-            ['man', 'tir', 'ons', 'tor', 'fre'].forEach(d => {
-                const dObj = w.days[d];
-                if (dObj.changes.length === 0) dayNormalCounts[d]++;
-                if (dObj.changes.some(c => c.type === 'holiday')) holidayDaysCount++;
-
-                currentSchedule.filter(e => e.day === d && isEntryTeaching(e)).forEach(e => {
-                    blockStats[e.title].plannedCount += 1;
-                    blockStats[e.title].plannedMin += Math.max(timeToMinutes(e.end) - timeToMinutes(e.start), 0);
-                });
-
-                dObj.items.forEach(item => {
-                    if (item.simStatus === 'normal' || item.simStatus === 'rescued') {
-                        const key = item.rescuedTitle || item.title;
-                        if (item.isTeaching) {
-                            if (blockStats[key]) {
-                                blockStats[key].actualCount += 1;
-                                blockStats[key].actualMin += item.effectiveMinutes;
-                            }
-                            weekTeachingMin += item.effectiveMinutes;
-                        }
-                    } else if (item.simStatus === 'immersion' && item.targetBlock) {
-                        if (!blockStats[item.targetBlock]) {
-                            blockStats[item.targetBlock] = { plannedCount: 0, plannedMin: 0, actualCount: 0, actualMin: 0, immersionMin: 0 };
-                        }
-                        blockStats[item.targetBlock].actualCount += 1;
-                        blockStats[item.targetBlock].actualMin += item.effectiveMinutes;
-                        blockStats[item.targetBlock].immersionMin += item.effectiveMinutes;
-                        if (isBlockTitleTeaching(item.targetBlock)) {
-                            weekTeachingMin += item.effectiveMinutes;
-                        }
-                    } else if (item.simStatus === 'event') {
-                        weekTeachingMin += Math.min(item.effectiveMinutes, 360);
-                    }
-                });
-            });
-
-            totalTeachingHours += (weekTeachingMin / 60);
-        });
-
-        renderWishesSection(cal, simulatedWeeks, blockStats);
-        if (activeTab !== 'tab-semester') return;
-
-        // 2. Render KPI-kort (klokketimer)
-        const avgHours = weeks.length > 0 ? (totalTeachingHours / weeks.length).toFixed(1) : 0;
-        const meetsSemRequirement = parseFloat(avgHours) >= 21;
-        if (simKpiRow) {
-            simKpiRow.innerHTML = `
-                <div class="sim-kpi-box">
-                    <div class="sim-kpi-label">Semesterlængde</div>
-                    <div class="sim-kpi-val">${weeks.length} uger</div>
-                    <div class="sim-kpi-sub">${cal.name}</div>
-                </div>
-                <div class="sim-kpi-box">
-                    <div class="sim-kpi-label">100 % Normaluger</div>
-                    <div class="sim-kpi-val">${normalWeeksCount} ud af ${weeks.length}</div>
-                    <div class="sim-kpi-sub">Uger helt uden ændringer</div>
-                </div>
-                <div class="sim-kpi-box">
-                    <div class="sim-kpi-label">Helligdage / lukkedage</div>
-                    <div class="sim-kpi-val">${holidayDaysCount} dage</div>
-                    <div class="sim-kpi-sub">Låst i kalenderen</div>
-                </div>
-                <div class="sim-kpi-box" style="${!meetsSemRequirement ? 'border-color:#fca5a5; background:#fef2f2;' : ''}">
-                    <div class="sim-kpi-label">Gns. reel undervisning / uge</div>
-                    <div class="sim-kpi-val" style="${!meetsSemRequirement ? 'color:#991b1b;' : ''}">${avgHours} timer</div>
-                    <div class="sim-kpi-sub">Lovkrav: min. 21 klokketimer</div>
-                </div>
-            `;
-        }
-
-        // 3. Render Fagblok-regnskab
-        if (semesterStatsContainer) {
-            const rowsHtml = Object.entries(blockStats).map(([title, st]) => {
-                const pHours = (st.plannedMin / 60).toFixed(1);
-                const aHours = (st.actualMin / 60).toFixed(1);
-                const diffHours = ((st.actualMin - st.plannedMin) / 60).toFixed(1);
-                const diffSign = diffHours > 0 ? `+${diffHours}` : diffHours;
-                const diffColor = diffHours < -3 ? '#dc2626' : (diffHours > 0 ? '#16a34a' : '#475569');
-                const { color } = getBlockColors({ title });
-                const immersionNote = st.immersionMin > 0 ? `<div style="font-size:0.68rem; color:#15803d; font-weight:600;">heraf +${(st.immersionMin / 60).toFixed(1)}t fordybelse</div>` : '';
-                return `
-                    <tr>
-                        <td>
-                            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px;"></span><strong>${title}</strong>
-                            ${immersionNote}
-                        </td>
-                        <td>${st.plannedCount}x (${pHours}t)</td>
-                        <td><strong>${st.actualCount}x (${aHours}t)</strong></td>
-                        <td style="color:${diffColor};font-weight:800;">${diffSign}t</td>
-                    </tr>
-                `;
-            }).join('');
-
-            semesterStatsContainer.innerHTML = `
-                <table class="sim-table">
-                    <thead><tr><th>Undervisningsfag</th><th>Planlagt</th><th>Reelt</th><th>Forskel</th></tr></thead>
-                    <tbody>${rowsHtml}</tbody>
-                </table>
-            `;
-        }
-
-        // 4. Render Uge-vælger & Proportional Uge-tidslinje (med klikbare overrides direkte i skemaet)
-        if (simWeekSelect) {
-            simWeekSelect.innerHTML = '';
-            simulatedWeeks.forEach((w, idx) => {
-                const opt = document.createElement('option');
-                opt.value = idx;
-                opt.textContent = `Uge ${w.week} – ${w.label || 'Normaluge'}`;
-                simWeekSelect.appendChild(opt);
-            });
-            simWeekSelect.value = selectedSimWeekIndex;
-        }
-
-        const currentSimWeek = simulatedWeeks[selectedSimWeekIndex];
-        if (simWeekDetail && currentSimWeek) {
-            const SIM_START_HOUR = 7, SIM_END_HOUR = 21.5, SIM_START_MIN = SIM_START_HOUR * 60, SIM_PX_PER_HOUR = 38, totalHeightPx = (SIM_END_HOUR - SIM_START_HOUR) * SIM_PX_PER_HOUR;
-            let ticksHtml = '';
-            for (let h = SIM_START_HOUR; h <= 21; h++) {
-                ticksHtml += `<div class="sim-time-tick" style="top:${(h - SIM_START_HOUR) * SIM_PX_PER_HOUR}px;">${String(h).padStart(2, '0')}:00</div>`;
-            }
-
-            const dayColsHtml = ['man', 'tir', 'ons', 'tor', 'fre'].map(d => {
-                const dayItems = currentSimWeek.days[d].items;
-                const cancelledItems = dayItems.filter(i => i.simStatus === 'cancelled');
-
-                const blocksHtml = dayItems.map((item, itemIdx) => {
-                    const sMin = Math.max(timeToMinutes(item.start), SIM_START_MIN);
-                    const eMin = Math.min(timeToMinutes(item.end), SIM_END_HOUR * 60);
-                    const topPx = ((sMin - SIM_START_MIN) / 60) * SIM_PX_PER_HOUR;
-                    const heightPx = Math.max(((eMin - sMin) / 60) * SIM_PX_PER_HOUR, 17);
-                    const isCompact = heightPx < 30;
-
-                    let posStyle = 'left: 2px; right: 2px; z-index: 12;';
-                    if (item.isMeal) {
-                        posStyle = 'left: 2px; right: 2px; z-index: 25;';
-                    } else if (item.simStatus === 'cancelled') {
-                        posStyle = 'left: calc(56% + 1px); width: calc(44% - 3px); z-index: 10;';
-                    } else if (['event', 'immersion', 'cancel_notice', 'holiday'].includes(item.simStatus)) {
-                        const overlapsCancelled = cancelledItems.some(c => Math.min(eMin, timeToMinutes(c.end)) > Math.max(sMin, timeToMinutes(c.start)));
-                        posStyle = overlapsCancelled ? 'left: 2px; width: calc(56% - 3px); z-index: 15;' : 'left: 2px; right: 2px; z-index: 15;';
-                    }
-
-                    const baseStyle = `top:${topPx}px; height:${heightPx}px; ${posStyle}`;
-                    const timeLabel = isCompact ? item.start : `${item.start}–${item.end}`;
-                    const compactCls = isCompact ? ' is-compact' : '';
-                    const dataAttrs = `data-sim-day="${d}" data-sim-item-idx="${itemIdx}"`;
-
-                    if (item.simStatus === 'cancelled') {
-                        return `<div class="sim-mini-block is-cancelled${compactCls}" style="${baseStyle}" title="Aflyst: ${item.title} (${item.start}-${item.end})"><span class="sim-mini-block-title">${item.title}</span><span class="sim-mini-block-time">${timeLabel}</span></div>`;
-                    }
-                    if (item.simStatus === 'holiday') {
-                        return `<div class="sim-mini-block is-holiday is-editable-override${compactCls}" ${dataAttrs} style="${baseStyle}" title="Klik for at redigere eller slette: ${item.title} (${item.start}-${item.end})"><span class="sim-mini-block-title">🔒 ${item.title}</span><span class="sim-mini-block-time">${timeLabel}</span></div>`;
-                    }
-                    if (item.simStatus === 'immersion') {
-                        return `<div class="sim-mini-block is-immersion is-editable-override${compactCls}" ${dataAttrs} style="${baseStyle}" title="Klik for at redigere eller slette: ${item.title} (${item.start}-${item.end})"><span class="sim-mini-block-title">⭐ ${item.title}</span><span class="sim-mini-block-time">${timeLabel}</span></div>`;
-                    }
-                    if (item.simStatus === 'cancel_notice') {
-                        return `<div class="sim-mini-block is-cancel is-editable-override${compactCls}" ${dataAttrs} style="${baseStyle}" title="Klik for at redigere eller slette: ${item.title} (${item.start}-${item.end})"><span class="sim-mini-block-title">🚫 ${item.title}</span><span class="sim-mini-block-time">${timeLabel}</span></div>`;
-                    }
-                    if (item.simStatus === 'event') {
-                        return `<div class="sim-mini-block is-event is-editable-override${compactCls}" ${dataAttrs} style="${baseStyle}" title="Klik for at redigere eller slette: ${item.title} (${item.start}-${item.end})"><span class="sim-mini-block-title">📌 ${item.title}</span><span class="sim-mini-block-time">${timeLabel}</span></div>`;
-                    }
-
-                    const { color, textColor } = getBlockColors({ title: item.rescuedTitle || item.title });
-                    return `<div class="sim-mini-block${compactCls}" style="${baseStyle} background:${color}; color:${textColor};" title="${item.title} (${item.start}-${item.end})"><span class="sim-mini-block-title">${item.title}</span><span class="sim-mini-block-time">${timeLabel}</span></div>`;
-                }).join('');
-
-                return `
-                    <div class="sim-day-col">
-                        <div class="sim-day-col-header">${DAY_LABELS[d]}</div>
-                        <div class="sim-day-col-body" style="height:${totalHeightPx}px; background-size: 100% ${SIM_PX_PER_HOUR}px;">${blocksHtml}</div>
-                    </div>
-                `;
-            }).join('');
-
-            simWeekDetail.className = 'sim-timeline-grid';
-            simWeekDetail.innerHTML = `
-                <div class="sim-time-axis">
-                    <div class="sim-time-axis-header"></div>
-                    <div class="sim-time-axis-body" style="height:${totalHeightPx}px;">${ticksHtml}</div>
-                </div>
-                ${dayColsHtml}
-            `;
-
-            // Klik på en override direkte i ugeskemaet åbner rediger/slet modal
-            simWeekDetail.querySelectorAll('.is-editable-override').forEach(el => {
-                el.addEventListener('click', () => {
-                    const dayKey = el.dataset.simDay;
-                    const itemIdx = parseInt(el.dataset.simItemIdx, 10);
-                    const simItem = currentSimWeek.days[dayKey]?.items[itemIdx];
-                    if (simItem) {
-                        openEditOverrideModal(cal, currentSimWeek.week, simItem);
-                    }
-                });
-            });
-        }
-
-        // 5. Render Makro-tabel over hele semesteret
-        if (semesterTableContainer) {
-            const macroRows = simulatedWeeks.map((w, idx) => {
-                const cells = ['man', 'tir', 'ons', 'tor', 'fre'].map(d => {
-                    const chgs = w.days[d].changes;
-                    if (chgs.length === 0) return `<td class="macro-cell-normal">✓ Normal</td>`;
-                    const hasHoliday = chgs.some(c => c.type === 'holiday');
-                    const isAllCancel = chgs.every(c => c.type === 'cancel');
-                    const cls = hasHoliday ? 'macro-cell-holiday' : (isAllCancel ? 'macro-cell-closed' : 'macro-cell-changed');
-                    const txt = chgs.map(c => {
-                        const prefix = c.type === 'holiday' ? '🔒 ' : (c.type === 'cancel' ? '🚫 ' : '');
-                        return `${prefix}${c.title} <small>(${c.start}-${c.end})</small>`;
-                    }).join('<br>');
-                    return `<td class="${cls}">${txt}</td>`;
-                }).join('');
-
-                return `
-                    <tr style="cursor:pointer;" data-week-idx="${idx}" title="Klik for at inspicere uge ${w.week}">
-                        <td><strong>Uge ${w.week}</strong><br><small style="color:#64748b;">${w.label || ''}</small></td>
-                        ${cells}
-                    </tr>
-                `;
-            }).join('');
-
-            semesterTableContainer.innerHTML = `
-                <table class="sim-table">
-                    <thead>
-                        <tr><th style="width:140px;">Uge</th><th>Mandag (${dayNormalCounts.man} normale)</th><th>Tirsdag (${dayNormalCounts.tir} normale)</th><th>Onsdag (${dayNormalCounts.ons} normale)</th><th>Torsdag (${dayNormalCounts.tor} normale)</th><th>Fredag (${dayNormalCounts.fre} normale)</th></tr>
-                    </thead>
-                    <tbody>${macroRows}</tbody>
-                </table>
-            `;
-
-            semesterTableContainer.querySelectorAll('tr[data-week-idx]').forEach(tr => {
-                tr.addEventListener('click', () => {
-                    selectedSimWeekIndex = parseInt(tr.dataset.weekIdx, 10);
-                    syncUrlState();
-                    renderSemesterSimulation();
-                });
-            });
-        }
-    }
-
-    if (semesterSelect) semesterSelect.addEventListener('change', () => { selectedSimWeekIndex = 0; syncUrlState(); renderSemesterSimulation(); });
-    if (simUseBuffer) simUseBuffer.addEventListener('change', () => renderSemesterSimulation());
-    if (btnResetWishes) {
-        btnResetWishes.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const cal = getActiveCalendar();
-            if (!cal) return;
-            if (confirm('Vil du nulstille alle dine midlertidige ønsker og kalender-overrides i browseren?')) {
-                resetAllLocalCalendarEdits(cal.id);
-            }
-        });
-    }
-    if (btnResetCalendarOverrides) {
-        btnResetCalendarOverrides.addEventListener('click', () => {
-            const cal = getActiveCalendar();
-            if (!cal) return;
-            if (confirm('Vil du nulstille alle lokale kalender-overrides og ønsker?')) {
-                resetAllLocalCalendarEdits(cal.id);
-            }
-        });
-    }
-    if (btnExportCalendarJson) {
-        btnExportCalendarJson.addEventListener('click', () => {
-            const cal = getActiveCalendar();
-            if (!cal) return;
-            const cleanCal = JSON.parse(JSON.stringify(cal));
-            (cleanCal.wishes || []).forEach(w => { delete w._customWish; });
-            cleanCal.weeks.forEach(w => {
-                (w.changes || []).forEach(c => {
-                    delete c._fromBrowser;
-                    delete c._source;
-                    delete c._baseIdx;
-                    delete c._overrideId;
-                });
-            });
-            const blob = new Blob([JSON.stringify(cleanCal, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${cleanCal.id}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        });
-    }
-    if (simWeekSelect) simWeekSelect.addEventListener('change', (e) => { selectedSimWeekIndex = parseInt(e.target.value, 10); syncUrlState(); renderSemesterSimulation(); });
-    if (btnPrevWeek) btnPrevWeek.addEventListener('click', () => { if (selectedSimWeekIndex > 0) { selectedSimWeekIndex--; syncUrlState(); renderSemesterSimulation(); } });
-    if (btnNextWeek) btnNextWeek.addEventListener('click', () => { const cal = getActiveCalendar(); if (cal && selectedSimWeekIndex < cal.weeks.length - 1) { selectedSimWeekIndex++; syncUrlState(); renderSemesterSimulation(); } });
-    if (btnExportSimImage) {
-        btnExportSimImage.addEventListener('click', () => {
-            const target = document.getElementById('semester-export-target');
-            if (!target || typeof window.html2canvas !== 'function') return;
-            window.html2canvas(target, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
-                const a = document.createElement('a');
-                a.download = `Semester_Simulering_${currentTitle.replace(/\s+/g, '_')}.png`;
-                a.href = canvas.toDataURL('image/png');
-                a.click();
-            });
-        });
-    }
-
-    // --- 10. LOCALSTORAGE & TIDSHJÆLPERE ---
-    function saveState() {
-        localStorage.setItem(STORAGE_KEY_CURRENT, JSON.stringify({
-            schedule: currentSchedule,
+    btnExportJson?.addEventListener('click', () => {
+        downloadJsonFile({
+            id: 'proto_' + Date.now(),
+            name: state.currentTitle,
             notes: notesTextarea ? notesTextarea.value : '',
-            activeProtoId,
-            currentTitle,
-            isModified
-        }));
-    }
+            schedule: state.currentSchedule
+        }, `${state.currentTitle.replace(/[^a-z0-9æøå]/gi, '_').toLowerCase()}.json`, 4);
+    });
 
-    function loadFromStorage() {
-        try {
-            const storedBlocks = localStorage.getItem(STORAGE_KEY_CUSTOM_BLOCKS);
-            if (storedBlocks) customBlocks = JSON.parse(storedBlocks);
+    btnExportImage?.addEventListener('click', () => {
+        const target = document.getElementById('export-target');
+        if (!target || typeof window.html2canvas !== 'function') return;
 
-            const storedProtos = localStorage.getItem(STORAGE_KEY_CUSTOM_PROTOS);
-            if (storedProtos) customPrototypes = JSON.parse(storedProtos);
+        if (scheduleCardActions) scheduleCardActions.style.display = 'none';
+        if (btnOpenConstraints) btnOpenConstraints.style.display = 'none';
 
-            const storedWishes = localStorage.getItem(STORAGE_KEY_WISH_PLACEMENTS);
-            if (storedWishes) wishPlacementsByCal = JSON.parse(storedWishes);
+        window.html2canvas(target, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
+            if (scheduleCardActions) scheduleCardActions.style.display = 'flex';
+            if (btnOpenConstraints) btnOpenConstraints.style.display = 'inline-flex';
+            const a = document.createElement('a');
+            a.download = `${state.currentTitle.replace(/\s+/g, '_')}_VIH.png`;
+            a.href = canvas.toDataURL('image/png');
+            a.click();
+        }).catch(() => {
+            if (scheduleCardActions) scheduleCardActions.style.display = 'flex';
+            if (btnOpenConstraints) btnOpenConstraints.style.display = 'inline-flex';
+        });
+    });
 
-            const storedCustomWishes = localStorage.getItem(STORAGE_KEY_CUSTOM_WISHES);
-            if (storedCustomWishes) customWishesByCal = JSON.parse(storedCustomWishes);
+    // --- INITIALISERING ---
+    function init() {
+        loadFromStorage();
 
-            const storedWeekOverrides = localStorage.getItem(STORAGE_KEY_WEEK_OVERRIDES);
-            if (storedWeekOverrides) weekOverridesByCal = JSON.parse(storedWeekOverrides);
+        if (toggleConstraintsOverlay) {
+            toggleConstraintsOverlay.checked = Boolean(state.showConstraintsOverlay);
+            toggleConstraintsOverlay.addEventListener('change', () => {
+                state.showConstraintsOverlay = toggleConstraintsOverlay.checked;
+                saveShowConstraintsOverlay();
+                renderSchedule();
+            });
+        }
 
-            const storedSections = localStorage.getItem(STORAGE_KEY_SIDEBAR_SECTIONS);
-            if (storedSections) {
-                const parsedSections = JSON.parse(storedSections);
-                if (typeof parsedSections.paletteOpen === 'boolean') sidebarSectionsState.paletteOpen = parsedSections.paletteOpen;
-                if (typeof parsedSections.wishesOpen === 'boolean') sidebarSectionsState.wishesOpen = parsedSections.wishesOpen;
+        setSectionOpen(sectionPalette, togglePaletteBtn, paletteBody, state.sidebarSectionsState.paletteOpen);
+        setSectionOpen(sectionWishes, toggleWishesBtn, wishesBody, state.sidebarSectionsState.wishesOpen);
+
+        buildTimeAxis();
+
+        initModals({
+            onScheduleChanged: () => {
+                setModifiedState(true);
+                saveCurrentState(notesTextarea?.value || '');
+                renderSchedule();
+            },
+            onConstraintsChanged: () => {
+                renderSchedule();
+            },
+            onBlocksChanged: () => {
+                renderPaletteAndStats();
             }
+        });
 
-            const storedCurrent = localStorage.getItem(STORAGE_KEY_CURRENT);
-            if (storedCurrent) {
-                const parsed = JSON.parse(storedCurrent);
-                if (parsed.activeProtoId) activeProtoId = parsed.activeProtoId;
-                if (parsed.currentTitle) currentTitle = parsed.currentTitle;
-                if (typeof parsed.isModified === 'boolean') isModified = parsed.isModified;
-            }
-        } catch (e) { console.warn('Fejl ved indlæsning af local storage:', e); }
-    }
+        initSimulator({
+            syncUrlState,
+            openWishesSection: () => setSectionOpen(sectionWishes, toggleWishesBtn, wishesBody, true)
+        });
 
-    function timeToMinutes(str) {
-        if (!str) return 0;
-        const [h, m] = str.replace('.', ':').split(':').map(Number);
-        return (h || 0) * 60 + (m || 0);
-    }
+        SETTINGS.prototypes = allPrototypes;
+        updateProtoDropdown();
 
-    function minutesToTime(totalMin) {
-        const h = Math.floor(totalMin / 60);
-        const m = totalMin % 60;
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        const urlParams = new URLSearchParams(window.location.search);
+        const linkedQuery = urlParams.get('skema') || urlParams.get('proto');
+        const linkedProto = findPrototypeByQuery(linkedQuery);
+
+        const validProto = linkedProto ||
+                           SETTINGS.prototypes.find(p => p.id === state.activeProtoId) ||
+                           state.customPrototypes.find(p => p.id === state.activeProtoId);
+
+        if (validProto) {
+            loadPrototype(validProto.id, false);
+        } else if (SETTINGS.prototypes.length > 0) {
+            loadPrototype(SETTINGS.prototypes[0].id, false);
+        } else {
+            updateActionButtonsVisibility();
+            renderSchedule();
+        }
+
+        applySimulatorUrlParams(urlParams);
+
+        const reqTab = urlParams.get('tab');
+        switchTab(reqTab === 'semester' ? 'tab-semester' : 'tab-builder');
+
+        renderPaletteAndStats();
+        setupDragAndDrop();
     }
 
     init();
