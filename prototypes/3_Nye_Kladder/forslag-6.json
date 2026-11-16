@@ -5,7 +5,7 @@
   "schedule": [
     { "id": "f5_m0", "day": "man", "title": "Morgenmad", "start": "07:30", "end": "07:55" },
     { "id": "f5_m1", "day": "man", "title": "Rengøring", "start": "08:00", "end": "08:30" },
-    { "id": "f5_m2", "day": "man", "title": "Fælles / Møde", "start": "08:45", "end": "09:15", "note": "Fælles" },
+    { "id": "f5_m2", "day": "man", "title": "Fællessang", "start": "08:45", "end": "09:15", "note": "Fællessang" },
     { "id": "f5_m3", "day": "man", "title": "Inspirationsfag", "start": "09:15", "end": "10:45" },
     { "id": "f5_m4", "day": "man", "title": "Fælles / Møde", "start": "11:00", "end": "11:50", "note": "Team" },
     { "id": "f5_m5", "day": "man", "title": "Frokost", "start": "12:00", "end": "12:30" },
@@ -15,7 +15,7 @@
     { "id": "f5_t1", "day": "tir", "title": "Rengøring", "start": "08:00", "end": "08:30" },
     { "id": "f5_t2", "day": "tir", "title": "Morgensamling", "start": "08:45", "end": "09:15" },
     { "id": "f5_t3", "day": "tir", "title": "DGL", "start": "09:15", "end": "10:45" },
-    { "id": "f5_t4", "day": "tir", "title": "Fælles / Møde", "start": "11:00", "end": "11:50", "note": "Lærermøde" },
+    { "id": "f5_t4", "day": "tir", "title": "Lærermøde / Elevmøde", "start": "11:00", "end": "11:50", "note": "Lærermøde" },
     { "id": "f5_t5", "day": "tir", "title": "Frokost", "start": "12:00", "end": "12:30" },
     { "id": "f5_t6", "day": "tir", "title": "Idræt 2", "start": "14:00", "end": "16:00" },
 
@@ -41,6 +41,6 @@
     { "id": "f5_f3", "day": "fre", "title": "Idræt 1", "start": "09:15", "end": "10:45" },
     { "id": "f5_f4", "day": "fre", "title": "Kompetencefag", "start": "11:00", "end": "11:50", "note": "Kompetence" },
     { "id": "f5_f5", "day": "fre", "title": "Frokost", "start": "12:00", "end": "12:30" },
-    { "id": "f5_f6", "day": "fre", "title": "Fælles / Møde", "start": "14:00", "end": "16:00", "note": "Fælles" }
+    { "id": "f5_f6", "day": "fre", "title": "Fællesskab", "start": "14:00", "end": "16:00", "note": "Fællessang & Fællesdans" }
   ]
 }

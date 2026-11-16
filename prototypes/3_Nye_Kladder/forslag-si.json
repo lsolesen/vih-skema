@@ -51,7 +51,7 @@
     { "id": "ny2_f3", "day": "fre", "title": "Kompetencefag", "start": "10:00", "end": "11:50", "note": "Langt slot" },
     { "id": "ny2_f4", "day": "fre", "title": "Frokost", "start": "12:00", "end": "12:30" },
     { "id": "ny2_f5", "day": "fre", "title": "Rengøring", "start": "12:30", "end": "13:00" },
-    { "id": "ny2_f6", "day": "fre", "title": "Fælles / Møde", "start": "13:15", "end": "15:00", "note": "Fælles bevægelse & Fællessang" },
+    { "id": "ny2_f6", "day": "fre", "title": "Fællesskab", "start": "13:15", "end": "15:00", "note": "Fælles bevægelse & Fællessang" },
     { "id": "ny2_f8", "day": "fre", "title": "Weekendmøde", "start": "16:30", "end": "17:15", "note": "Klar til weekenden" },
     { "id": "ny2_f7", "day": "fre", "title": "Aftensmad", "start": "17:30", "end": "18:00" }
   ]

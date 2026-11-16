@@ -9,110 +9,181 @@
 </head>
 <body>
     <div class="planner-layout">
-        <!-- VENSTRE SIDEBAR: PALET & TIMETÆLLER -->
+        <!-- VENSTRE SIDEBAR: KOLLAPSBAR PALET & ØNSKELISTE -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <span class="vih-badge">VIH</span>
-                <div>
-                    <h2>Skemalægger</h2>
-                    <p class="sidebar-sub">Træk fag & se timetæller</p>
+                <h2>Skemalægger</h2>
+            </div>
+
+            <!-- SEKTION 1: FAGBRIKKER & TIMETAL -->
+            <div class="sidebar-accordion" id="section-palette">
+                <div class="sidebar-accordion-header" id="toggle-palette-section" role="button" tabindex="0" aria-expanded="true">
+                    <div class="accordion-title-group">
+                        <span class="accordion-chevron">▾</span>
+                        <span class="section-label">🧩 Fagbrikker & Timetal</span>
+                    </div>
+                    <button type="button" id="btn-new-block" class="sidebar-plus-btn" title="Opret ny fagbrik">+</button>
+                </div>
+                <div class="sidebar-accordion-body" id="palette-section-body">
+                    <div id="unified-palette" class="unified-palette-list"></div>
                 </div>
             </div>
 
-            <div class="sidebar-top-actions">
-                <button id="btn-new-block" class="btn btn-full btn-outline">+ Opret ny brik</button>
-            </div>
-
-            <!-- Palet med integreret timetæller -->
-            <div class="sidebar-section">
-                <div class="section-header-flex">
-                    <label class="section-label">🧩 Fagbrikker & Timetal</label>
-                    <span class="badge-hint">Træk over</span>
+            <!-- SEKTION 2: BRUTTOLISTE / ØNSKER -->
+            <div class="sidebar-accordion" id="section-wishes">
+                <div class="sidebar-accordion-header" id="toggle-wishes-section" role="button" tabindex="0" aria-expanded="true">
+                    <div class="accordion-title-group">
+                        <span class="accordion-chevron">▾</span>
+                        <span class="section-label">📋 Ønsker</span>
+                        <span id="wishes-counter-badge" class="sidebar-count-badge">0/0</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <button type="button" id="btn-reset-wishes" class="sidebar-reset-btn" style="display: none;" title="Nulstil lokale ønsker og ændringer">↺</button>
+                        <button type="button" id="btn-new-wish" class="sidebar-plus-btn" title="Tilføj nyt ønske til bruttolisten">+</button>
+                    </div>
                 </div>
-                <div id="unified-palette" class="unified-palette-list">
-                    <!-- Brikker genereres dynamisk via script.js -->
+                <div class="sidebar-accordion-body" id="wishes-section-body">
+                    <div id="sim-wishes-container" class="sidebar-wishes-list"></div>
                 </div>
-            </div>
-
-            <div class="sidebar-footer">
-                <button id="btn-clear-schedule" class="btn btn-full btn-subtle">🗑️ Ryd hele skemaet</button>
             </div>
         </aside>
 
         <!-- HOVEDOMRÅDE -->
         <main class="main-content">
-            <!-- ØVERSTE VÆRKTØJSLINJE -->
+            <!-- ØVERSTE NAVIGATION & SKABELONVÆLGER -->
             <div class="top-control-bar">
                 <div class="toolbar-group">
+                    <nav class="nav-tabs">
+                        <button type="button" class="tab-btn active" data-tab="tab-builder">🗓️ Ugeskema</button>
+                        <button type="button" class="tab-btn" data-tab="tab-semester">📆 Årsplan & Data</button>
+                    </nav>
+
+                    <div class="toolbar-divider"></div>
+
                     <label class="toolbar-label" for="prototype-select">Skabelon:</label>
                     <select id="prototype-select" class="select-input">
                         <option value="">-- Vælg foruddefineret skema --</option>
                     </select>
-                    <button id="btn-copy-link" class="btn btn-outline" style="display: none;" title="Kopiér direkte link til dette skema">🔗 Kopiér link</button>
-                    <button id="btn-save-proto" class="btn btn-outline" title="Gem nuværende skema som nyt forslag">💾 Gem forslag</button>
+                    <button id="btn-copy-link" class="btn btn-outline" style="display: none;" title="Kopiér direkte link">🔗 Kopiér link</button>
                     <button id="btn-delete-proto" class="btn btn-danger" style="display: none;" title="Slet dette gemte forslag">Slet</button>
                 </div>
-
-                <div class="toolbar-group">
-                    <button id="btn-insert-meals" class="btn btn-outline">🥪 Indsæt måltider</button>
-                    <button id="btn-export-json" class="btn btn-outline" title="Download som JSON-fil">📥 Download JSON</button>
-                    <button id="btn-export-image" class="btn btn-primary">📸 Gem billede</button>
-                </div>
             </div>
 
-            <!-- SKEMAFELT MED OMDØB-BAR OVERSKRIFT -->
-            <div id="export-target" class="export-container">
-                <div class="schedule-title-row">
-                    <div class="title-with-status">
-                        <div class="editable-title-wrapper" title="Klik for at omdøbe">
-                            <h1 id="schedule-title-display">Skemaforslag</h1>
-                            <span class="edit-icon">✏️</span>
+            <!-- FANE 1: UGESKEMA (BYGGER) -->
+            <section id="tab-builder" class="tab-pane active">
+                <div id="export-target" class="export-container">
+                    <div class="schedule-title-row schedule-header-flex">
+                        <div>
+                            <div class="title-with-status">
+                                <div class="editable-title-wrapper" title="Klik for at omdøbe">
+                                    <h1 id="schedule-title-display">Skemaforslag</h1>
+                                    <span class="edit-icon">✏️</span>
+                                </div>
+                                <div id="status-badge" class="status-badge status-saved">
+                                    <span class="status-dot">●</span>
+                                    <span id="status-badge-text">Skabelon aktiv</span>
+                                </div>
+                            </div>
+                            <p class="subtitle">Mandag til fredag · Kl. 07:00 – 21:30 · 5 min snapping</p>
+                            <div id="builder-stats-bar" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.82rem;"></div>
                         </div>
-                        <div id="status-badge" class="status-badge status-saved">
-                            <span class="status-dot">●</span>
-                            <span id="status-badge-text">Skabelon aktiv</span>
+
+                        <!-- SKEMAETS EGNE HANDLINGER -->
+                        <div class="schedule-card-actions" id="schedule-card-actions">
+                            <button id="btn-save-proto" class="btn btn-outline" title="Gem nuværende skema som nyt forslag">💾 Gem</button>
+                            <button id="btn-insert-meals" class="btn btn-outline" title="Indsæt faste måltider">🥪 Måltider</button>
+                            <button id="btn-export-json" class="btn btn-outline" title="Download skema som JSON-fil">📥 JSON</button>
+                            <button id="btn-clear-schedule" class="btn btn-subtle" title="Ryd alle lektioner i skemaet">🗑️ Ryd</button>
+                            <button id="btn-export-image" class="btn btn-primary">📸 Gem billede</button>
                         </div>
                     </div>
-                    <p class="subtitle">Mandag til fredag · Kl. 07:00 – 21:30 · 5 min snapping</p>
-                </div>
 
-                <!-- Tidslinje Gitter -->
-                <div class="timeline-wrapper">
-                    <div class="time-axis" id="time-axis"></div>
-
-                    <div class="days-grid" id="days-grid">
-                        <div class="day-column" data-day="man">
-                            <div class="day-header">Mandag</div>
-                            <div class="day-body" id="day-man"></div>
-                        </div>
-                        <div class="day-column" data-day="tir">
-                            <div class="day-header">Tirsdag</div>
-                            <div class="day-body" id="day-tir"></div>
-                        </div>
-                        <div class="day-column" data-day="ons">
-                            <div class="day-header day-highlight">Onsdag <small>(Fordybelse)</small></div>
-                            <div class="day-body" id="day-ons"></div>
-                        </div>
-                        <div class="day-column" data-day="tor">
-                            <div class="day-header">Torsdag</div>
-                            <div class="day-body" id="day-tor"></div>
-                        </div>
-                        <div class="day-column" data-day="fre">
-                            <div class="day-header">Fredag</div>
-                            <div class="day-body" id="day-fre"></div>
+                    <div class="timeline-wrapper">
+                        <div class="time-axis" id="time-axis"></div>
+                        <div class="days-grid" id="days-grid">
+                            <div class="day-column" data-day="man">
+                                <div class="day-header">Mandag</div>
+                                <div class="day-body" id="day-man"></div>
+                            </div>
+                            <div class="day-column" data-day="tir">
+                                <div class="day-header">Tirsdag</div>
+                                <div class="day-body" id="day-tir"></div>
+                            </div>
+                            <div class="day-column" data-day="ons">
+                                <div class="day-header day-highlight">Onsdag <small>(Fordybelse)</small></div>
+                                <div class="day-body" id="day-ons"></div>
+                            </div>
+                            <div class="day-column" data-day="tor">
+                                <div class="day-header">Torsdag</div>
+                                <div class="day-body" id="day-tor"></div>
+                            </div>
+                            <div class="day-column" data-day="fre">
+                                <div class="day-header">Fredag</div>
+                                <div class="day-body" id="day-fre"></div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Huskeliste & Noter -->
-                <div class="notes-container">
-                    <label for="schedule-notes" class="notes-label">
-                        📝 Kommentarer og overvejelser til forslaget:
-                    </label>
-                    <textarea id="schedule-notes" class="notes-textarea" rows="4" 
-                        placeholder="Skriv dine overvejelser til dette forslag..."></textarea>
+                    <div class="notes-container">
+                        <label for="schedule-notes" class="notes-label">📝 Kommentarer og overvejelser til forslaget:</label>
+                        <textarea id="schedule-notes" class="notes-textarea" rows="4" placeholder="Skriv dine overvejelser til dette forslag..."></textarea>
+                    </div>
                 </div>
-            </div>
+            </section>
+
+            <!-- FANE 2: ÅRSPLAN & SEMESTERSIMULERING -->
+            <section id="tab-semester" class="tab-pane" style="display: none;">
+                <div id="semester-export-target" class="export-container">
+                    <div class="schedule-title-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <h1 id="sim-header-title">Semester-simulering</h1>
+                            <p class="subtitle">Konsekvensberegning for <strong id="sim-proto-name">-</strong> hen over semesterets kalender</p>
+                        </div>
+
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 700; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; cursor: pointer;">
+                                <input type="checkbox" id="sim-use-buffer"> Red aflyste fag via BUFFER
+                            </label>
+                            <label class="toolbar-label" for="semester-select">Semester:</label>
+                            <select id="semester-select" class="select-input"></select>
+                            <button id="btn-reset-calendar-overrides" class="btn btn-subtle" style="display: none;" title="Nulstil alle lokale kalender-overrides og ønsker">↺ Nulstil ændringer</button>
+                            <button id="btn-export-calendar-json" class="btn btn-outline" title="Download kalender-JSON inkl. ønsker og uge-overrides">📥 Kalender JSON</button>
+                            <button id="btn-export-sim-image" class="btn btn-primary">📸 Gem oversigt</button>
+                        </div>
+                    </div>
+
+                    <!-- Nøgletal -->
+                    <div id="sim-kpi-row" class="sim-kpi-grid"></div>
+
+                    <!-- 2-kolonne: Fagblok-regnskab + Tidstro uge-tidslinje -->
+                    <div class="sim-split-grid">
+                        <div class="sim-card">
+                            <h3 class="sim-card-title">📊 Sammentælling pr. fagblok</h3>
+                            <div id="semester-stats-container"></div>
+                        </div>
+
+                        <div class="sim-card">
+                            <div class="week-stepper-bar">
+                                <div style="display: flex; gap: 6px; align-items: center;">
+                                    <button type="button" id="btn-prev-week" class="btn btn-outline" style="padding: 0.4rem 0.65rem;">◀</button>
+                                    <select id="sim-week-select" class="select-input" style="font-weight: 800;"></select>
+                                    <button type="button" id="btn-next-week" class="btn btn-outline" style="padding: 0.4rem 0.65rem;">▶</button>
+                                </div>
+                                <button type="button" id="btn-add-week-override" class="btn btn-outline" style="font-size: 0.78rem; padding: 0.4rem 0.7rem;" title="Tilføj en ændring/override i denne uge">+ Override</button>
+                            </div>
+                            <div id="sim-week-changes-bar" class="sim-week-changes-bar"></div>
+                            <div id="sim-week-detail" class="sim-timeline-grid"></div>
+                        </div>
+                    </div>
+
+                    <!-- Bund: Makro-tabel over hele semesteret -->
+                    <div class="sim-card" style="margin-top: 1.5rem;">
+                        <h3 class="sim-card-title">🗓️ Samlet semester-oversigt (Normaldage vs. ændringer)</h3>
+                        <div id="semester-table-container" class="sim-macro-wrapper"></div>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -152,6 +223,11 @@
                     </label>
                 </div>
             </div>
+            <div class="form-group" style="margin-top: 2px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 700; color: var(--text-main);">
+                    <input type="checkbox" id="edit-is-teaching"> Tæller med som undervisning
+                </label>
+            </div>
             <div class="modal-actions">
                 <button type="button" id="btn-delete-entry" class="btn btn-danger">Slet brik</button>
                 <div style="display: flex; gap: 8px;">
@@ -184,9 +260,131 @@
                     <option value="120">120 minutter (2 timer)</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 700; color: var(--text-main);">
+                    <input type="checkbox" id="custom-is-teaching" checked> Tæller med som undervisning (lovkrav)
+                </label>
+            </div>
             <div class="modal-actions">
                 <button type="button" id="btn-cancel-custom-block" class="btn btn-subtle">Annuller</button>
                 <button type="submit" class="btn btn-primary">Opret brik</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Modal: Opret nyt ønske til bruttolisten -->
+    <dialog id="wish-modal" class="modal">
+        <form method="dialog" id="wish-form" class="modal-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                <h3 style="border-bottom: none; padding-bottom: 0; margin: 0;">Tilføj ønske til bruttolisten</h3>
+                <button type="button" id="btn-close-wish-modal" style="background: none; border: none; font-size: 1.4rem; line-height: 1; color: var(--text-muted); cursor: pointer;">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Navn på ønske / aktivitet</label>
+                <input type="text" id="wish-title" placeholder="fx Teamsamtaler, Blokdag 3, Fællesdans..." required>
+            </div>
+            <div class="form-group">
+                <label>Type af afbrydelse / modul</label>
+                <select id="wish-type">
+                    <option value="buffer_or_event">Fleksibelt modul (forsøg via BUFFER først)</option>
+                    <option value="immersion">Fordybelsesdag / Blokdag (tilskriver timer til fag)</option>
+                    <option value="event">Fast arrangement / Event i tidsrum</option>
+                </select>
+            </div>
+            <div class="form-group" id="wish-target-block-group" style="display: none;">
+                <label>Målfagblok (får tilskrevet fordybelsestimerne)</label>
+                <select id="wish-target-block">
+                    <option value="Idræt 1">Idræt 1</option>
+                    <option value="Idræt 2">Idræt 2</option>
+                    <option value="Kompetencefag">Kompetencefag</option>
+                    <option value="Inspirationsfag">Inspirationsfag</option>
+                    <option value="DGL">DGL</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Starttid (ved fast tidsrum)</label>
+                    <input type="time" id="wish-start" value="08:00">
+                </div>
+                <div class="form-group">
+                    <label>Sluttid (ved fast tidsrum)</label>
+                    <input type="time" id="wish-end" value="16:00">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Ønskede uger (valgfrit, adskilt af komma)</label>
+                <input type="text" id="wish-preferred-weeks" placeholder="fx 38, 42, 44 (lad stå tom for hele semesteret)">
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="btn-cancel-wish-modal" class="btn btn-subtle">Annuller</button>
+                <button type="submit" class="btn btn-primary">Tilføj til ønskeliste</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Modal: Tilføj uge-override -->
+    <!-- Modal: Tilføj / rediger uge-override -->
+    <dialog id="week-override-modal" class="modal">
+        <form method="dialog" id="week-override-form" class="modal-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                <h3 id="override-modal-title" style="border-bottom: none; padding-bottom: 0; margin: 0;">Tilføj ændring / override</h3>
+                <button type="button" id="btn-close-override-modal" title="Luk uden at gemme" style="background: none; border: none; font-size: 1.4rem; line-height: 1; color: var(--text-muted); cursor: pointer;">&times;</button>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Uge</label>
+                    <select id="override-week" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Ugedag</label>
+                    <select id="override-day" required>
+                        <option value="man">Mandag</option>
+                        <option value="tir">Tirsdag</option>
+                        <option value="ons">Onsdag</option>
+                        <option value="tor">Torsdag</option>
+                        <option value="fre">Fredag</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Type af ændring</label>
+                <select id="override-type">
+                    <option value="event">📌 Event / Arrangement (overskriver skema)</option>
+                    <option value="cancel">🚫 Aflysning / Sent fremmøde / Rejse</option>
+                    <option value="immersion">⭐ Fordybelsesdag / Blokdag (tilskriver timer)</option>
+                    <option value="holiday">🔒 Helligdag / Lukkedag</option>
+                </select>
+            </div>
+            <div class="form-group" id="override-target-block-group" style="display: none;">
+                <label>Målfagblok (tilskrives timerne)</label>
+                <select id="override-target-block">
+                    <option value="Idræt 1">Idræt 1</option>
+                    <option value="Idræt 2">Idræt 2</option>
+                    <option value="Kompetencefag">Kompetencefag</option>
+                    <option value="Inspirationsfag">Inspirationsfag</option>
+                    <option value="DGL">DGL</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Titel / Beskrivelse</label>
+                <input type="text" id="override-title" placeholder="fx Sent indmøde, Fællesdans, Blokdag..." required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Starttid</label>
+                    <input type="time" id="override-start" value="08:00" required>
+                </div>
+                <div class="form-group">
+                    <label>Sluttid</label>
+                    <input type="time" id="override-end" value="12:00" required>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="btn-delete-override" class="btn btn-danger" style="display: none;">Slet ændring</button>
+                <div style="display: flex; gap: 8px; margin-left: auto;">
+                    <button type="button" id="btn-cancel-override-modal" class="btn btn-outline">Annuller</button>
+                    <button type="submit" id="btn-submit-override" class="btn btn-primary">Gem ændring</button>
+                </div>
             </div>
         </form>
     </dialog>
