@@ -1,6 +1,6 @@
 {
   "id": "proto_si",
-  "name": "Forslag SI",
+  "name": "Forslag - Sen mandag",
   "notes": "Variant med sen start mandag. Ulemper: Ingen mulighed for frokostmøde.",
   "schedule": [
     { "id": "ny2_m1", "day": "man", "title": "Morgenmad", "start": "08:15", "end": "08:45" },
