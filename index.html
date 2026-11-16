@@ -48,6 +48,7 @@
                     <select id="prototype-select" class="select-input">
                         <option value="">-- Vælg foruddefineret skema --</option>
                     </select>
+                    <button id="btn-copy-link" class="btn btn-outline" style="display: none;" title="Kopiér direkte link til dette skema">🔗 Kopiér link</button>
                     <button id="btn-save-proto" class="btn btn-outline" title="Gem nuværende skema som nyt forslag">💾 Gem forslag</button>
                     <button id="btn-delete-proto" class="btn btn-danger" style="display: none;" title="Slet dette gemte forslag">Slet</button>
                 </div>
@@ -116,10 +117,12 @@
     </div>
 
     <!-- Modal: Rediger lektion -->
-    <!-- Modal: Rediger lektion -->
     <dialog id="edit-modal" class="modal">
         <form method="dialog" id="edit-form" class="modal-card">
-            <h3>Rediger lektion</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                <h3 style="border-bottom: none; padding-bottom: 0; margin: 0;">Rediger lektion</h3>
+                <button type="button" id="btn-close-edit" title="Luk uden at gemme" style="background: none; border: none; font-size: 1.4rem; line-height: 1; color: var(--text-muted); cursor: pointer; padding: 0 4px;">&times;</button>
+            </div>
             <div class="form-group">
                 <label>Fag / Bloknavn</label>
                 <input type="text" id="edit-title" required>
@@ -138,7 +141,6 @@
                 <label>Bemærkning / Lokale (valgfrit)</label>
                 <input type="text" id="edit-note" placeholder="fx Hal, Globen, Udendørs">
             </div>
-            <!-- NYT: Mulighed for farve-override -->
             <div class="form-row" style="margin-top: 5px;">
                 <div class="form-group">
                     <label>Specifik farve</label>
@@ -152,7 +154,10 @@
             </div>
             <div class="modal-actions">
                 <button type="button" id="btn-delete-entry" class="btn btn-danger">Slet brik</button>
-                <button type="submit" class="btn btn-primary">Gem ændringer</button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" id="btn-cancel-edit" class="btn btn-outline">Annuller</button>
+                    <button type="submit" class="btn btn-primary">Gem ændringer</button>
+                </div>
             </div>
         </form>
     </dialog>

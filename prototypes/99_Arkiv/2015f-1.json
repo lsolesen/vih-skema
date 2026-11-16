@@ -1,6 +1,6 @@
 {
   "id": "proto_f2015_1",
-  "name": "F2015",
+  "name": "2015F",
   "notes": "Grundskema for Forår 2015, 1. periode (januar - marts).",
   "schedule": [
     { "id": "f15_m1", "day": "man", "title": "Morgenmad", "start": "07:25", "end": "07:55" },
@@ -10,8 +10,7 @@
     { "id": "f15_m6", "day": "man", "title": "Idræt 2", "start": "10:30", "end": "12:00", "note": "Adventure 360, Badminton, Dance, Futsal, Løb, Styrke" },
     { "id": "f15_m7", "day": "man", "title": "Rengøring", "start": "12:00", "end": "12:30" },
     { "id": "f15_m8", "day": "man", "title": "Frokost", "start": "12:30", "end": "13:00" },
-    { "id": "f15_m9", "day": "man", "title": "Inspirationsfag", "start": "14:00", "end": "15:30", "note": "Guitar, Rytme og puls, Politik, Spoken words, Target" },
-    { "id": "f15_m11", "day": "man", "title": "Inspirationsfag", "start": "16:00", "end": "17:30" },
+    { "id": "f15_m9", "day": "man", "title": "Inspirationsfag", "start": "14:00", "end": "16:15", "note": "Guitar, Rytme og puls, Politik, Spoken words, Target" },
     { "id": "f15_m12", "day": "man", "title": "Aftensmad", "start": "17:30", "end": "18:15" },
 
     { "id": "f15_t1", "day": "tir", "title": "Morgenmad", "start": "07:25", "end": "07:55" },

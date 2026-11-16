@@ -1,6 +1,6 @@
 {
   "id": "proto_f2012_1",
-  "name": "F2012",
+  "name": "2012F",
   "notes": "Grundskema for Forår 2012, 1. periode (januar - marts).",
   "schedule": [
     { "id": "f12_m1", "day": "man", "title": "Morgenmad", "start": "07:20", "end": "07:55" },

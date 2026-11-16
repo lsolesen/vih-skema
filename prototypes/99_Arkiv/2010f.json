@@ -1,6 +1,6 @@
 {
   "id": "proto_f2010_uge3",
-  "name": "F2010",
+  "name": "2010F",
   "notes": "Grundskema for Forår 2010, uge 3.",
   "schedule": [
     { "id": "f10_u3_m1", "day": "man", "title": "Morgenmad", "start": "07:30", "end": "07:55" },

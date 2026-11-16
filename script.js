@@ -22,6 +22,7 @@ function startApp() {
     const statsContainer = document.getElementById('stats-container');
     const timeAxisEl = document.getElementById('time-axis');
     const protoSelect = document.getElementById('prototype-select');
+    const btnCopyLink = document.getElementById('btn-copy-link');
     const titleDisplay = document.getElementById('schedule-title-display');
     const notesTextarea = document.getElementById('schedule-notes');
     const statusBadge = document.getElementById('status-badge');
@@ -49,6 +50,48 @@ function startApp() {
     const btnExportJson = document.getElementById('btn-export-json');
     const btnExportImage = document.getElementById('btn-export-image');
 
+    // --- URL- & KNAP-HJÆLPERE ---
+    function updateActionButtonsVisibility() {
+        const isCustom = Boolean(activeProtoId && activeProtoId.startsWith('custom_proto_'));
+        const isOfficial = Boolean(
+            activeProtoId &&
+            !isCustom &&
+            SETTINGS.prototypes &&
+            SETTINGS.prototypes.some(p => p.id === activeProtoId)
+        );
+
+        if (btnDeleteProto) {
+            btnDeleteProto.style.display = isCustom ? 'inline-block' : 'none';
+        }
+        if (btnCopyLink) {
+            btnCopyLink.style.display = isOfficial ? 'inline-block' : 'none';
+        }
+    }
+
+    function findPrototypeByQuery(query) {
+        if (!query) return null;
+        const q = query.trim().toLowerCase();
+        return SETTINGS.prototypes.find(p =>
+            (p.id && p.id.toLowerCase() === q) ||
+            (p._fileName && p._fileName.toLowerCase() === q) ||
+            (p.name && p.name.toLowerCase() === q)
+        ) || customPrototypes.find(p =>
+            (p.id && p.id.toLowerCase() === q) ||
+            (p.name && p.name.toLowerCase() === q)
+        ) || null;
+    }
+
+    function syncUrlWithPrototype(protoId) {
+        const url = new URL(window.location.href);
+        if (protoId && !protoId.startsWith('custom_proto_')) {
+            url.searchParams.set('skema', protoId);
+        } else {
+            url.searchParams.delete('skema');
+            url.searchParams.delete('proto');
+        }
+        window.history.replaceState({}, '', url);
+    }
+
     // --- 1. INITIALISERING ---
     function init() {
         loadFromStorage();
@@ -57,7 +100,13 @@ function startApp() {
         SETTINGS.prototypes = allPrototypes;
         updateProtoDropdown();
 
-        const validProto = SETTINGS.prototypes.find(p => p.id === activeProtoId) ||
+        // Tjek om der er linket direkte til et skema i URL'en (?skema=... eller ?proto=...)
+        const urlParams = new URLSearchParams(window.location.search);
+        const linkedQuery = urlParams.get('skema') || urlParams.get('proto');
+        const linkedProto = findPrototypeByQuery(linkedQuery);
+
+        const validProto = linkedProto ||
+                           SETTINGS.prototypes.find(p => p.id === activeProtoId) ||
                            customPrototypes.find(p => p.id === activeProtoId);
 
         if (validProto) {
@@ -65,6 +114,7 @@ function startApp() {
         } else if (SETTINGS.prototypes.length > 0) {
             loadPrototype(SETTINGS.prototypes[0].id, false);
         } else {
+            updateActionButtonsVisibility();
             renderSchedule();
         }
 
@@ -106,19 +156,16 @@ function startApp() {
 
     function setModifiedState(modified) {
         isModified = modified;
-        if (!statusBadge || !statusBadgeText) return;
-
-        if (isModified) {
-            statusBadge.className = 'status-badge status-modified';
-            statusBadgeText.textContent = '✏️ Kladde (ugemt ændring)';
-        } else {
-            statusBadge.className = 'status-badge status-saved';
-            statusBadgeText.textContent = '★ Skabelon aktiv';
+        if (statusBadge && statusBadgeText) {
+            if (isModified) {
+                statusBadge.className = 'status-badge status-modified';
+                statusBadgeText.textContent = '✏️ Kladde (ugemt ændring)';
+            } else {
+                statusBadge.className = 'status-badge status-saved';
+                statusBadgeText.textContent = '★ Skabelon aktiv';
+            }
         }
-
-        if (btnDeleteProto) {
-            btnDeleteProto.style.display = (activeProtoId && activeProtoId.startsWith('custom_proto_')) ? 'inline-block' : 'none';
-        }
+        updateActionButtonsVisibility();
     }
 
     // --- 2. FARVELOGIK ---
@@ -317,6 +364,7 @@ function startApp() {
         renderPaletteAndStats();
     }
 
+    // --- 6. FLYT BRIKKER & FORLÆNG/FORKORT ---
     function attachDragAndResize(blockEl, entry) {
         const resizeHandle = blockEl.querySelector('.block-resize-handle');
         const timeDisplay = blockEl.querySelector('.block-time');
@@ -498,7 +546,22 @@ function startApp() {
         });
     }
 
-    // --- 8. PROTOTYPE DROPDOWN (UDEN DUBLIKATION) ---
+    const btnCancelEdit = document.getElementById('btn-cancel-edit');
+    const btnCloseEdit = document.getElementById('btn-close-edit');
+
+    if (btnCancelEdit && editModal) {
+        btnCancelEdit.addEventListener('click', () => editModal.close());
+    }
+    if (btnCloseEdit && editModal) {
+        btnCloseEdit.addEventListener('click', () => editModal.close());
+    }
+    if (editModal) {
+        editModal.addEventListener('click', (e) => {
+            if (e.target === editModal) editModal.close();
+        });
+    }
+
+    // --- 8. PROTOTYPE DROPDOWN, LINKS & SLET FORSLAG ---
     function updateProtoDropdown() {
         if (!protoSelect) return;
         protoSelect.innerHTML = '<option value="">-- Vælg foruddefineret skema --</option>';
@@ -562,10 +625,7 @@ function startApp() {
         }
 
         protoSelect.value = activeProtoId || "";
-
-        if (btnDeleteProto) {
-            btnDeleteProto.style.display = (activeProtoId && activeProtoId.startsWith('custom_proto_')) ? 'inline-block' : 'none';
-        }
+        updateActionButtonsVisibility();
     }
 
     function loadPrototype(id, markModified = false) {
@@ -580,6 +640,7 @@ function startApp() {
             if (notesTextarea) notesTextarea.value = currentNotes;
             if (titleDisplay) titleDisplay.textContent = currentTitle;
 
+            syncUrlWithPrototype(proto.id);
             setModifiedState(markModified);
             updateProtoDropdown();
             saveState();
@@ -591,6 +652,24 @@ function startApp() {
         protoSelect.addEventListener('change', (e) => {
             if (e.target.value) {
                 loadPrototype(e.target.value, false);
+            }
+        });
+    }
+
+    if (btnCopyLink) {
+        btnCopyLink.addEventListener('click', async () => {
+            if (!activeProtoId || activeProtoId.startsWith('custom_proto_')) return;
+
+            const shareUrl = new URL(window.location.href);
+            shareUrl.searchParams.set('skema', activeProtoId);
+
+            try {
+                await navigator.clipboard.writeText(shareUrl.toString());
+                const originalText = btnCopyLink.textContent;
+                btnCopyLink.textContent = '✅ Link kopieret!';
+                setTimeout(() => { btnCopyLink.textContent = originalText; }, 2000);
+            } catch (err) {
+                prompt('Kopiér dette link:', shareUrl.toString());
             }
         });
     }
@@ -616,6 +695,7 @@ function startApp() {
                     currentNotes = "";
                     if (titleDisplay) titleDisplay.textContent = currentTitle;
                     if (notesTextarea) notesTextarea.value = "";
+                    syncUrlWithPrototype(null);
                     setModifiedState(false);
                     updateProtoDropdown();
                     saveState();
@@ -643,6 +723,7 @@ function startApp() {
             currentTitle = newProto.name;
             if (titleDisplay) titleDisplay.textContent = currentTitle;
 
+            syncUrlWithPrototype(activeProtoId);
             setModifiedState(false);
             updateProtoDropdown();
             saveState();

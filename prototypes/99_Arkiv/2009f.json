@@ -1,6 +1,6 @@
 {
   "id": "proto_f2009",
-  "name": "F2009",
+  "name": "2009F",
   "notes": "Grundskema for Forår 2009.",
   "schedule": [
     { "id": "f09_m1", "day": "man", "title": "Morgenmad", "start": "07:30", "end": "07:55" },
