@@ -20,30 +20,62 @@
     },
     {
       "id": "w_f_komp_dage",
-      "title": "Kompetencedag 1",
+      "title": "Kompetencedag #1",
       "type": "immersion",
       "targetBlock": "Kompetencefag",
       "start": "08:00",
       "end": "16:00",
-      "preferredWeeks": [12]
+      "preferredWeeks": [11, 12]
     },
-        {
+    {
+      "id": "w_f_pf_1",
+      "title": "PF-møde #1",
+      "type": "event",
+      "start": "08:00",
+      "end": "12:00",
+      "preferredWeeks": [11, 12]
+    },
+    {
+      "id": "w_f_pf_2",
+      "title": "PF-møde #2",
+      "type": "event",
+      "start": "08:00",
+      "end": "12:00",
+      "preferredWeeks": [15, 17]
+    },
+    {
+      "id": "w_f_pf_3",
+      "title": "PF-møde #3",
+      "type": "event",
+      "start": "08:00",
+      "end": "12:00",
+      "preferredWeeks": [22, 23, 24, 25]
+    },
+    {
+      "id": "w_f_teamhygge",
+      "title": "Teamhygge",
+      "type": "buffer_or_event",
+      "start": "10:20",
+      "end": "11:50",
+      "preferredWeeks": [16, 17, 18]
+    },
+    {
       "id": "w_f_komp_dage_2_1",
-      "title": "Kompetencedag 2/1",
+      "title": "Kompetencedag #2-1",
       "type": "immersion",
       "targetBlock": "Kompetencefag",
       "start": "08:00",
       "end": "16:00",
-      "preferredWeeks": [23]
+      "preferredWeeks": [22, 23, 24]
     },
         {
       "id": "w_f_komp_dage_2_2",
-      "title": "Kompetencedag 2/2",
+      "title": "Kompetencedag #2-2",
       "type": "immersion",
       "targetBlock": "Kompetencefag",
       "start": "08:00",
       "end": "16:00",
-      "preferredWeeks": [23]
+      "preferredWeeks": [22, 23, 24]
     },
     {
       "id": "w_f_vaerelsesbytte",
@@ -62,12 +94,44 @@
       "preferredWeeks": [13, 14, 15, 16]
     },
     {
+      "id": "w_e_bygge_1",
+      "title": "VIH Bygger Højskole #1",
+      "type": "event",
+      "start": "08:45",
+      "end": "11:50",
+      "preferredWeeks": [2, 3]
+    },
+    {
+      "id": "w_e_bygge_3",
+      "title": "VIH Bygger Højskole #2",
+      "type": "event",
+      "start": "08:45",
+      "end": "11:50",
+      "preferredWeeks": [23, 24, 25]
+    },
+    {
+      "id": "w_f_team_gruppe",
+      "title": "Teamsamtaler",
+      "type": "buffer_or_event",
+      "start": "10:20",
+      "end": "11:50",
+      "preferredWeeks": [2, 3, 4]
+    },
+    {
       "id": "w_f_team_gruppe",
       "title": "Teamsamtaler: Fællesskab",
       "type": "buffer_or_event",
       "start": "10:20",
       "end": "11:50",
       "preferredWeeks": [13]
+    },
+    {
+      "id": "w_f_team_transition",
+      "title": "Teamsamtaler: Transition & Bygge Højskole",
+      "type": "buffer_or_event",
+      "start": "10:20",
+      "end": "11:50",
+      "preferredWeeks": [25]
     },
     {
       "id": "w_f_familiedag",
@@ -103,28 +167,12 @@
       "preferredWeeks": [21]
     },
     {
-      "id": "w_f_faglig_formiddag",
-      "title": "PF-møde",
-      "type": "event",
-      "start": "08:00",
-      "end": "12:00",
-      "preferredWeeks": [24]
-    },
-    {
       "id": "w_f_b1_fordybelse",
       "title": "Idræt 1 dag #3",
       "type": "immersion",
       "targetBlock": "Idræt 1",
       "start": "08:00",
       "end": "16:00",
-      "preferredWeeks": [25]
-    },
-    {
-      "id": "w_f_team_transition",
-      "title": "Teamsamtaler: Transition & Bygge Højskole",
-      "type": "buffer_or_event",
-      "start": "10:20",
-      "end": "11:50",
       "preferredWeeks": [25]
     },
     {
@@ -152,11 +200,13 @@
       "week": 3,
       "label": "VIH Bygger Højskole",
       "changes": [
-        { "day": "man", "start": "08:00", "end": "17:00", "type": "event", "title": "VIH Bygger Højskole" }
+        { "day": "man", "start": "08:45", "end": "11:50", "type": "event", "title": "VIH Bygger Højskole" },
+        { "day": "tor", "start": "08:00", "end": "08:45", "type": "event", "title": "VIH Bygger Højskole" },
+        { "day": "tor", "start": "10:50", "end": "11:50", "type": "event", "title": "Hvordan lader man op" }
       ]
     },
     { "week": 4, "label": "Normaluge", "changes": [] },
-    { "week": 5, "label": "Perofrmanceuge", "changes": [
+    { "week": 5, "label": "Performanceuge", "changes": [
         { "day": "man", "start": "08:00", "end": "17:00", "type": "event", "title": "Performanceuge" },
         { "day": "tir", "start": "08:00", "end": "17:00", "type": "event", "title": "Performanceuge" },
         { "day": "ons", "start": "08:00", "end": "17:00", "type": "event", "title": "Performanceuge" },
@@ -205,7 +255,7 @@
       "week": 12,
       "label": "Kompetencedag",
       "changes": [
-        { "day": "ons", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag 1" }
+        { "day": "ons", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag #1" }
       ]
     },
     {
@@ -241,6 +291,7 @@
       "week": 17,
       "label": "Familiedag & Restitution",
       "changes": [
+        { "day": "tor", "start": "08:45", "end": "10:00", "type": "event", "title": "Teammøde uden lærer" },
         { "day": "tor", "start": "13:00", "end": "20:00", "type": "event", "title": "Familiedag" },
         { "day": "fre", "start": "08:00", "end": "17:00", "type": "cancel", "title": "Restitutionsweekend" }
       ]
@@ -269,16 +320,17 @@
     },
     {
       "week": 21,
-      "label": "Blokdag",
+      "label": "Idræt 2 dag",
       "changes": [
-        { "day": "tor", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Idræt 1", "title": "Idræt 1 dag #3" }
+        { "day": "tor", "start": "08:45", "end": "16:00", "type": "immersion", "targetBlock": "Idræt 2", "title": "Idræt 2 dag #3" }
       ]
     },
     {
       "week": 22,
       "label": "Pinsedag",
       "changes": [
-        { "day": "man", "start": "08:00", "end": "21:00", "type": "holiday", "title": "Pinsedag (2. pinsedag)" }
+        { "day": "man", "start": "08:00", "end": "21:00", "type": "holiday", "title": "Pinsedag (2. pinsedag)" },
+        { "day": "tor", "start": "10:20", "end": "11:50", "type": "immersion", "targetBlock": "Inspirationsfag", "title": "Inspirationsfag" }
       ]
     },
     { "week": 23, "label": "Rejseuge", "changes": [
@@ -293,23 +345,23 @@
       "label": "Sent indmøde & Kompetence",
       "changes": [
         { "day": "man", "start": "08:00", "end": "12:00", "type": "cancel", "title": "Sent indmøde" },
-        { "day": "ons", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag 2/1" },
-        { "day": "tor", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag 2/2" }
+        { "day": "ons", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag #2-1" },
+        { "day": "tor", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag #2-2" },
+        { "day": "fre", "start": "08:00", "end": "09:30", "type": "immersion", "targetBlock": "Inspirationsfag", "title": "Inspirationsfag" }
       ]
     },
     {
       "week": 25,
-      "label": "Teamsamtaler & Blokdag",
+      "label": "Teamsamtaler & Idræt 1 dag",
       "changes": [
-        { "day": "ons", "start": "10:20", "end": "11:50", "type": "event", "title": "Teamsamtaler: Transition & Bygge Højskole" },
-        { "day": "tor", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Idræt 2", "title": "Idræt 2 dag #3" }
+        { "day": "ons", "start": "10:20", "end": "15:30", "type": "event", "title": "Teamsamtaler: Transition & Bygge Højskole" },
+        { "day": "tor", "start": "08:45", "end": "16:00", "type": "immersion", "targetBlock": "Idræt 1", "title": "Idræt 1 dag #3" }
       ]
     },
     {
       "week": 26,
       "label": "Outro",
       "changes": [
-        { "day": "man", "start": "08:00", "end": "17:00", "type": "event", "title": "Outro" },
         { "day": "tir", "start": "08:00", "end": "17:00", "type": "event", "title": "Outro" },
         { "day": "ons", "start": "08:00", "end": "17:00", "type": "event", "title": "Outro" },
         { "day": "tor", "start": "08:00", "end": "17:00", "type": "event", "title": "Outro" },

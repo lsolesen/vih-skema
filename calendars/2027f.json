@@ -56,7 +56,7 @@
     },
     {
       "id": "w_f_komp_dage",
-      "title": "Kompetencedag 1",
+      "title": "Kompetencedag #1",
       "type": "immersion",
       "targetBlock": "Kompetencefag",
       "start": "08:00",
@@ -65,7 +65,7 @@
     },
         {
       "id": "w_f_komp_dage_2_1",
-      "title": "Kompetencedag 2/1",
+      "title": "Kompetencedag #2-1",
       "type": "immersion",
       "targetBlock": "Kompetencefag",
       "start": "08:00",
@@ -74,7 +74,7 @@
     },
         {
       "id": "w_f_komp_dage_2_2",
-      "title": "Kompetencedag 2/2",
+      "title": "Kompetencedag #2-2",
       "type": "immersion",
       "targetBlock": "Kompetencefag",
       "start": "08:00",
@@ -238,7 +238,7 @@
       "week": 11,
       "label": "Kompetencedage",
       "changes": [
-        { "day": "ons", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag 1" }
+        { "day": "ons", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag #1" }
       ]
     },
     {
@@ -314,8 +314,8 @@
       "week": 23,
       "label": "Kompetencedage",
       "changes": [
-        { "day": "ons", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag 2/1" },
-        { "day": "tor", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag 2/2" }
+        { "day": "ons", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag #2-1" },
+        { "day": "tor", "start": "08:00", "end": "16:00", "type": "immersion", "targetBlock": "Kompetencefag", "title": "Kompetencedag #2-2" }
       ]
     },
     {
@@ -332,8 +332,6 @@
       "week": 25,
       "label": "Outrouge",
       "changes": [
-        { "day": "man", "start": "08:00", "end": "17:00", "type": "event", "title": "Outro" },
-        { "day": "tir", "start": "08:00", "end": "17:00", "type": "event", "title": "Outro" },
         { "day": "ons", "start": "08:00", "end": "17:00", "type": "event", "title": "Outro" },
         { "day": "tor", "start": "08:00", "end": "17:00", "type": "event", "title": "Outro" },
         { "day": "fre", "start": "08:00", "end": "17:00", "type": "event", "title": "Outro & Afrejse" }

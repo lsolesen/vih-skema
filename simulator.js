@@ -39,6 +39,7 @@ let callbacks = {
 
 // DOM-referencer (sættes ved initSimulator)
 let dom = {};
+const openPendingWishIds = new Set();
 
 export function getActiveCalendar() {
     if (!dom.semesterSelect || scannedCalendars.length === 0) return null;
@@ -226,27 +227,39 @@ function simulateWeek(weekObj, baseSchedule, useBufferRescue) {
 
 function suggestPlacementsForWish(wish, simulatedWeeks, blockStats) {
     const candidates = [];
-    const prefWeeks = Array.isArray(wish.preferredWeeks) && wish.preferredWeeks.length > 0
+    const hasExplicitPrefWeeks = Array.isArray(wish.preferredWeeks) && wish.preferredWeeks.length > 0;
+    const prefWeeks = hasExplicitPrefWeeks
         ? wish.preferredWeeks
         : simulatedWeeks.map(w => w.week);
 
     simulatedWeeks.forEach(w => {
-        const isPreferredWeek = prefWeeks.includes(w.week);
+        const minWeekDist = hasExplicitPrefWeeks
+            ? Math.min(...prefWeeks.map(pw => Math.abs(w.week - pw)))
+            : 0;
+        const isExactPreferredWeek = hasExplicitPrefWeeks && minWeekDist === 0;
+
+        let proximityScore = 0;
+        if (hasExplicitPrefWeeks) {
+            if (minWeekDist === 0) proximityScore = 150;
+            else if (minWeekDist === 1) proximityScore = 95;
+            else if (minWeekDist === 2) proximityScore = 60;
+            else if (minWeekDist === 3) proximityScore = 30;
+            else proximityScore = -12 * minWeekDist;
+        }
 
         DAY_KEYS.forEach(day => {
             const dayObj = w.days[day];
-            const isBlockedDay = dayObj.changes.some(c =>
-                c.type === 'holiday' ||
-                (timeToMinutes(c.end || '16:00') - timeToMinutes(c.start || '08:00') >= 360)
+            const hasHoliday = dayObj.changes.some(c => c.type === 'holiday');
+            const hasFullDayEvent = dayObj.changes.some(c =>
+                (timeToMinutes(c.end || '16:00') - timeToMinutes(c.start || '08:00')) >= 360
             );
-            if (isBlockedDay) return;
+
+            if (hasHoliday || (hasFullDayEvent && !isExactPreferredWeek)) return;
 
             if (wish.type === 'buffer_or_event') {
                 const freeBuffer = dayObj.items.find(i => i.title === 'BUFFER' && i.simStatus === 'normal');
                 if (freeBuffer) {
-                    let score = 200;
-                    if (isPreferredWeek) score += 60;
-                    if (dayObj.changes.length > 0) score += 15;
+                    const score = 200 + proximityScore;
                     candidates.push({
                         week: w.week,
                         weekLabel: w.label || '',
@@ -257,6 +270,7 @@ function suggestPlacementsForWish(wish, simulatedWeeks, blockStats) {
                         targetBlock: null,
                         viaBuffer: true,
                         lostMinutes: 0,
+                        hasOverlap: false,
                         impactText: '0t tab (via BUFFER)',
                         score
                     });
@@ -289,10 +303,28 @@ function suggestPlacementsForWish(wish, simulatedWeeks, blockStats) {
                 }
             });
 
-            let score = 100 - (lostMinutes / 10) - deficitPenalty;
-            if (isPreferredWeek) score += 50;
+            // Tjek om tidsrummet allerede overlapper med et andet arrangement (fx Outro)
+            const overlappingEvents = dayObj.changes.filter(c =>
+                c.type !== 'holiday' &&
+                c.type !== 'cancel' &&
+                Math.min(timeToMinutes(c.end || '16:00'), cEnd) - Math.max(timeToMinutes(c.start || '08:00'), cStart) > 10
+            );
+            const eventOverlapPenalty = overlappingEvents.length * 25;
+
+            let score = 100 - (lostMinutes / 10) - deficitPenalty - eventOverlapPenalty + proximityScore;
             if (targetAlreadyOnDay) score += 25;
-            if (dayObj.changes.length > 0) score += 15;
+
+            let impactText = '';
+            if (overlappingEvents.length > 0) {
+                const evNames = overlappingEvents.map(c => c.title).join(', ');
+                impactText = lostMinutes === 0
+                    ? `Oven i: ${evNames} (0t fagtab)`
+                    : `Oven i ${evNames} + aflyser ${(lostMinutes / 60).toFixed(1)}t`;
+            } else {
+                impactText = lostMinutes === 0
+                    ? '0t tab for andre fag'
+                    : `Aflyser ${(lostMinutes / 60).toFixed(1)}t (${Array.from(affectedBlocks).join(', ')})`;
+            }
 
             candidates.push({
                 week: w.week,
@@ -304,9 +336,8 @@ function suggestPlacementsForWish(wish, simulatedWeeks, blockStats) {
                 targetBlock: wish.targetBlock || null,
                 viaBuffer: false,
                 lostMinutes,
-                impactText: lostMinutes === 0
-                    ? '0t tab for andre fag'
-                    : `Aflyser ${(lostMinutes / 60).toFixed(1)}t (${Array.from(affectedBlocks).join(', ')})`,
+                hasOverlap: overlappingEvents.length > 0,
+                impactText,
                 score
             });
         });
@@ -396,6 +427,7 @@ function renderWishesSection(cal, simulatedWeeks, blockStats) {
 
         if (foundMatch) {
             scheduledCount++;
+            openPendingWishIds.delete(w.id);
             const dayShort = DAY_SHORT[foundMatch.day] || foundMatch.day;
             return `
                 <div class="sb-wish-item is-scheduled">
@@ -417,73 +449,74 @@ function renderWishesSection(cal, simulatedWeeks, blockStats) {
 
         const suggestions = suggestPlacementsForWish(w, simulatedWeeks, blockStats);
         const bestSug = suggestions[0];
-        const prefText = Array.isArray(w.preferredWeeks) && w.preferredWeeks.length > 0
-            ? `Ønsket: uge ${w.preferredWeeks.join(', ')}`
-            : 'Hele semesteret';
+        const hasPrefWeeks = Array.isArray(w.preferredWeeks) && w.preferredWeeks.length > 0;
+        const prefFullText = hasPrefWeeks ? `Ønsket: uge ${w.preferredWeeks.join(', ')}` : 'Hele semesteret';
+        const prefShortText = hasPrefWeeks
+            ? (w.preferredWeeks.length <= 2 ? `Uge ${w.preferredWeeks.join(', ')}` : `Uge ${w.preferredWeeks[0]}+`)
+            : '';
 
-        const bestSugHtml = bestSug ? `
-            <div class="sb-wish-sug-box">
-                <div style="min-width:0;">
-                    <strong>Uge ${bestSug.week} · ${DAY_SHORT[bestSug.day]}</strong>
-                    <div style="font-size:0.65rem; color:${bestSug.lostMinutes === 0 ? '#15803d' : '#64748b'}; font-weight:${bestSug.lostMinutes === 0 ? '700' : '400'};">
-                        ${bestSug.impactText}
+        const sugsHtml = suggestions.map((sug, idx) => {
+            const sugColor = sug.hasOverlap ? '#b45309' : (sug.lostMinutes === 0 ? '#15803d' : '#64748b');
+            const sugWeight = (sug.lostMinutes === 0 || sug.hasOverlap) ? '700' : '400';
+            return `
+                <div class="sb-wish-sug-box">
+                    <div style="min-width:0;">
+                        <strong>Uge ${sug.week} · ${DAY_SHORT[sug.day]}</strong>
+                        <div style="font-size:0.65rem; color:${sugColor}; font-weight:${sugWeight};">
+                            ${sug.impactText}
+                        </div>
                     </div>
+                    <button type="button" class="btn btn-outline btn-apply-wish-sug" data-wish-id="${w.id}" data-sug-idx="${idx}" style="padding:2px 7px; font-size:0.69rem; white-space:nowrap;">
+                        + Læg fast
+                    </button>
                 </div>
-                <button type="button" class="btn btn-outline btn-apply-wish-sug" data-wish-id="${w.id}" data-sug-idx="0" style="padding:2px 7px; font-size:0.69rem; white-space:nowrap;">
-                    + Læg fast
-                </button>
-            </div>
-        ` : '';
+            `;
+        }).join('');
 
-        const altSugsHtml = suggestions.slice(1).map((sug, idx) => `
-            <div class="sb-wish-sug-box">
-                <div style="min-width:0;">
-                    <strong>Uge ${sug.week} · ${DAY_SHORT[sug.day]}</strong>
-                    <div style="font-size:0.64rem; color:#64748b;">${sug.impactText}</div>
-                </div>
-                <button type="button" class="btn btn-outline btn-apply-wish-sug" data-wish-id="${w.id}" data-sug-idx="${idx + 1}" style="padding:2px 6px; font-size:0.67rem;">
-                    + Læg fast
-                </button>
-            </div>
-        `).join('');
+        // Forhåndsvælg første ønskede uge i dropdownen (eller bedste forslag hvis ingen uge er ønsket)
+        const firstPrefWeek = hasPrefWeeks
+            ? w.preferredWeeks.map(Number).find(pw => cal.weeks.some(wk => Number(wk.week) === pw))
+            : null;
+        const defaultManualWeek = firstPrefWeek ?? (bestSug ? Number(bestSug.week) : Number(cal.weeks[0]?.week));
+        const defaultManualDay = bestSug && Number(bestSug.week) === defaultManualWeek ? bestSug.day : 'tor';
 
-        const weekOptions = cal.weeks.map(wk => `<option value="${wk.week}">Uge ${wk.week}</option>`).join('');
+        const weekOptions = cal.weeks
+            .map(wk => `<option value="${wk.week}" ${Number(wk.week) === defaultManualWeek ? 'selected' : ''}>Uge ${wk.week}</option>`)
+            .join('');
+
+        const dayOptions = DAY_KEYS
+            .map(dk => `<option value="${dk}" ${dk === defaultManualDay ? 'selected' : ''}>${DAY_SHORT[dk]}</option>`)
+            .join('');
+
+        const isOpen = openPendingWishIds.has(w.id);
 
         return `
-            <div class="sb-wish-item is-pending" data-wish-card="${w.id}">
-                <div class="sb-wish-main-row">
-                    <div class="sb-wish-left">
-                        <span class="sb-wish-status-icon is-open" title="Mangler placering">○</span>
-                        <div>
-                            <div class="sb-wish-title">${w.title}</div>
-                            <div class="sb-wish-sub">${prefText}</div>
+            <details class="sb-wish-item is-pending is-collapsible" data-wish-id="${w.id}" data-wish-card="${w.id}" ${isOpen ? 'open' : ''}>
+                <summary class="sb-wish-summary" title="${w.title} (${prefFullText}) — klik for at folde ud">
+                    <div class="sb-wish-main-row">
+                        <div class="sb-wish-left">
+                            <span class="sb-wish-status-icon is-open">○</span>
+                            <span class="sb-wish-title">${w.title}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
+                            ${prefShortText ? `<span class="sb-wish-pref-pill">${prefShortText}</span>` : ''}
+                            <span class="sb-wish-chevron" aria-hidden="true">▾</span>
+                            ${w._customWish
+                                ? `<button type="button" class="btn-delete-custom-wish" data-wish-id="${w.id}" title="Slet ønske" style="background:none; border:none; cursor:pointer; font-size:0.95rem; line-height:1; color:#92400e; padding:0 2px;">&times;</button>`
+                                : ''}
                         </div>
                     </div>
-                    ${w._customWish
-                        ? `<button type="button" class="btn-delete-custom-wish" data-wish-id="${w.id}" title="Slet ønske" style="background:none; border:none; cursor:pointer; font-size:0.95rem; color:#92400e; padding:0 2px;">&times;</button>`
-                        : ''}
-                </div>
+                </summary>
                 <div class="sb-wish-actions">
-                    ${bestSugHtml}
-                    <details class="sb-wish-more-details">
-                        <summary>Flere forslag / vælg selv</summary>
-                        <div class="sb-wish-more-body">
-                            ${altSugsHtml}
-                            <div style="display:flex; gap:4px; align-items:center; margin-top:2px;">
-                                <select class="select-input manual-wish-week" style="padding:2px 4px; font-size:0.7rem; flex:1;">${weekOptions}</select>
-                                <select class="select-input manual-wish-day" style="padding:2px 4px; font-size:0.7rem;">
-                                    <option value="man">Man</option>
-                                    <option value="tir">Tir</option>
-                                    <option value="ons">Ons</option>
-                                    <option value="tor" selected>Tor</option>
-                                    <option value="fre">Fre</option>
-                                </select>
-                                <button type="button" class="btn btn-outline btn-manual-lock" data-wish-id="${w.id}" style="padding:2px 6px; font-size:0.7rem;">Lås</button>
-                            </div>
-                        </div>
-                    </details>
+                    <div class="sb-wish-sub" style="margin-bottom:2px;">${prefFullText}</div>
+                    ${sugsHtml}
+                    <div style="display:flex; gap:4px; align-items:center; margin-top:3px;">
+                        <select class="select-input manual-wish-week" data-default-week="${defaultManualWeek}" style="padding:2px 4px; font-size:0.7rem; flex:1;">${weekOptions}</select>
+                        <select class="select-input manual-wish-day" data-default-day="${defaultManualDay}" style="padding:2px 4px; font-size:0.7rem;">${dayOptions}</select>
+                        <button type="button" class="btn btn-outline btn-manual-lock" data-wish-id="${w.id}" style="padding:2px 6px; font-size:0.7rem;">Lås</button>
+                    </div>
                 </div>
-            </div>
+            </details>
         `;
     }).join('');
 
@@ -491,6 +524,20 @@ function renderWishesSection(cal, simulatedWeeks, blockStats) {
         dom.wishesCounterBadge.textContent = `${scheduledCount}/${wishes.length}`;
     }
     dom.simWishesContainer.innerHTML = wishItemsHtml;
+
+    dom.simWishesContainer.querySelectorAll('details.is-collapsible').forEach(det => {
+        det.addEventListener('toggle', () => {
+            if (det.open) openPendingWishIds.add(det.dataset.wishId);
+            else openPendingWishIds.delete(det.dataset.wishId);
+        });
+    });
+
+    dom.simWishesContainer.querySelectorAll('.manual-wish-week').forEach(sel => {
+        if (sel.dataset.defaultWeek) sel.value = sel.dataset.defaultWeek;
+    });
+    dom.simWishesContainer.querySelectorAll('.manual-wish-day').forEach(sel => {
+        if (sel.dataset.defaultDay) sel.value = sel.dataset.defaultDay;
+    });
 
     dom.simWishesContainer.querySelectorAll('.btn-apply-wish-sug').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -521,7 +568,11 @@ function renderWishesSection(cal, simulatedWeeks, blockStats) {
     });
 
     dom.simWishesContainer.querySelectorAll('.btn-delete-custom-wish').forEach(btn => {
-        btn.addEventListener('click', () => deleteCustomWish(cal.id, btn.dataset.wishId));
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            deleteCustomWish(cal.id, btn.dataset.wishId);
+        });
     });
 }
 

@@ -18,7 +18,7 @@
     { "id": "f6_t4", "day": "tir", "title": "Lærermøde / Elevmøde", "start": "10:20", "end": "11:50", "note": "Lærermøde / Fællesmøde" },
     { "id": "f6_t5", "day": "tir", "title": "Frokost", "start": "12:00", "end": "12:30" },
     { "id": "f6_t6", "day": "tir", "title": "Idræt 2", "start": "14:00", "end": "15:30" },
-    { "id": "f6_t7", "day": "tir", "title": "Højskoleaften", "start": "19:00", "end": "21:30" },
+    { "id": "f6_t7", "day": "tir", "title": "Højskoleaften", "start": "19:00", "end": "20:30" },
 
     { "id": "f6_o0", "day": "ons", "title": "Rengøring", "start": "12:30", "end": "13:00" },
     { "id": "f6_o1", "day": "ons", "title": "Morgenmad", "start": "07:30", "end": "07:55" },
